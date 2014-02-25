@@ -1,0 +1,108 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<project name="pluto-charon" default="all" basedir=".">
+	<property name="src.dir" value="${basedir}/src"/>
+	<property name="src.test.dir" value="${basedir}/test"/>
+	<property name="lib.dir" value="${basedir}/../lib"/>
+	<property name="build.dir" value="${basedir}/out"/>
+	<property name="build.test.dir" value="${basedir}/out_test"/>
+	<property name="build.jar" value="${basedir}/pluto.jar"/>
+
+	<target name="init">
+	</target>
+
+	<target name="clean" depends="init">
+		<delete dir="${build.dir}" failonerror="false" />
+		<delete dir="${build.test.dir}" failonerror="false" />
+		<delete file="${build.jar}"/>
+	</target>
+
+
+	<target name="compile" depends="init">
+		<mkdir dir="${build.dir}"/>
+		<javac srcdir="${src.dir}" 
+			   destdir="${build.dir}" 
+			   debug="false" 
+			   optimize="true" 
+			   target="1.5"
+			   source="1.5"
+			   nowarn="false"
+			   fork="true"
+			   memoryInitialSize="128m"
+			   memoryMaximumSize="128m">
+			<classpath>
+				<fileset dir="${lib.dir}">
+					<include name="*.jar"/>
+				</fileset>
+			</classpath>
+		</javac>
+
+		<copy todir="${build.dir}">
+			<fileset dir="${src.dir}">
+				<exclude name="**/*.java" />
+			</fileset>
+		</copy>
+	</target>
+
+	<target name="test" depends="compile">
+		<mkdir dir="${build.test.dir}"/>
+		<!-- compile tests -->
+		<javac srcdir="${src.test.dir}" 
+			   destdir="${build.test.dir}" 
+			   debug="true" 
+			   optimize="true" 
+			   target="1.5"
+			   source="1.5"
+			   nowarn="false"
+			   fork="true"
+			   memoryInitialSize="128m"
+			   memoryMaximumSize="128m">
+			<classpath>
+				<pathelement path="${build.dir}"/>
+				<fileset dir="${lib.dir}">
+					<include name="*.jar"/>
+				</fileset>
+			</classpath>
+		</javac>
+
+		<copy todir="${build.test.dir}">
+			<fileset dir="${src.test.dir}">
+				<exclude name="**/*.java" />
+			</fileset>
+		</copy>
+
+		<!-- run junit tests -->
+		<junit printsummary="yes" haltonfailure="yes">
+			<classpath>
+				<pathelement path="${build.test.dir}"/>
+				<pathelement path="${build.dir}"/>
+				<fileset dir="${lib.dir}">
+					<include name="*.jar"/>
+				</fileset>
+			</classpath>
+
+			<formatter type="plain"/>
+
+			<batchtest fork="yes" todir="${build.test.dir}">
+				<fileset dir="${src.test.dir}">
+					<include name="**/*Test*.java"/>
+				</fileset>
+			</batchtest>
+		</junit>
+	</target>
+
+	<target name="jar"  depends="test">
+		<delete file="${build.jar}"/>
+
+		<jar destfile="${build.jar}">
+			<fileset dir="${build.dir}"/>
+			<zipfileset src="lib/cx-interpreter.jar" excludes="META-INF/**/*"/>
+
+			<manifest>
+				<attribute name="Main-Class" value="pluto.PlutoServer"/>
+			</manifest>
+		</jar>
+	</target>
+
+	<target name="all" depends="jar"/>
+
+</project>
