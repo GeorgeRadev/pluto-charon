@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>StorageEngine</title>
+<meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+<link type="text/css" href="file/style.css" rel="stylesheet" />
+<script type="text/javascript" src="file/jquery-1.4.4.min.js"></script>
+<script type="text/javascript" src="file/jquery-ui-1.8.10.custom.min.js"></script>
+<script>
+	$(document).ready(function() {
+		$("#dateFrom").datepicker({
+			dateFormat : 'yy-mm-dd'
+		});
+		$("#dateTo").datepicker({
+			dateFormat : 'yy-mm-dd'
+		});
+	});
+
+	function searchClear() {
+		var url = "" + window.location.href;
+		var p = url.indexOf('?');
+
+		if (p >= 0) {
+			url = url.substring(0, p);
+		}
+		window.location = url;
+	}
+
+	function gotoPage(n) {
+		document.theForm.operation.value = 'search';
+		document.theForm.currentPage.value = n;
+		document.theForm.submit();
+	}
+
+	function sortBy(ix) {
+		document.theForm.operation.value = 'search';
+		document.theForm.sortIndex.value = ix;
+		page = parseInt("${currentPage}");
+		if (page > 0) {
+			document.theForm.currentPage.value = page - 1;
+		} else {
+			document.theForm.currentPage.value = 0;
+		}
+
+		document.theForm.submit();
+	}
+
+	function exportToFile() {
+		if (confirm("Export may take a long time depending on the number of records!\nDo you want to proceed?")) {
+			document.theForm.operation.value = 'export';
+			document.theForm.submit();
+		}
+	}
+</script>
+</head>
+<body>
+	<table width="100%" border="0" cellspacing="0" cellpadding="0">
+		<tr>
+			<td class="header">
+				<h1>StorageEngine</h1>
+				<h2><a href="search">Search</a> <a href="upload">Upload</a> <a href="logview">LogViewer</a> <a href="login?action=logout">Logout</a> </h2>
+			</td>
+		</tr>
+		<tr>
+			<td align="center"><br /> <br />
+				<form method="get" id="theForm" name="theForm">
+
+					<input type="hidden" id="operation" name="operation" value="search" />
+					<input type="hidden" id="currentPage" name="currentPage"
+						value="${currentPage}" /> <input type="hidden" id="sortIndex"
+						name="sortIndex" value="${sortIndex}" />
+
+					<table border="0" cellspacing="0" cellpadding="0" width="100%">
+						<tr>
+							<td nowrap="nowrap">From date: <input name="dateFrom"
+								value="${dateFrom}" type="text" id="dateFrom" title="from date" />
+								&nbsp;&nbsp;To date: <input name="dateTo" value="${dateTo}"
+								type="text" id="dateTo" title="to date" /> &nbsp;&nbsp;Type: <input
+								name="documentType" value="${documentType}" type="text"
+								id="documentType" title="document type" /> &nbsp;&nbsp; Name: <input
+								name="searchName" value="${searchName}" type="text"
+								id="searchName" title="search in document name" />&nbsp;&nbsp;
+								Meta: <input name="searchMeta" value="${searchMeta}" type="text"
+								id="searchMeta" title="search in meta text" />
+							</td>
+							<td align="right">
+								<div style="align: left;">
+									<input type="button" name="buttonClear" value="Clear"
+										id="buttonClear" onClick="searchClear();" class="button"
+										style="background-color: #444;" /> <input type="button"
+										name="buttonExport" value="export" id="buttonExport"
+										onClick="exportToFile();" class="button" /> <input
+										type="submit" name="buttonSearch" value="Search"
+										id="buttonSearch" onClick="searchPage(0,0);return false;"
+										class="button" />
+								</div>
+							</td>
+						</tr>
+					</table>
+
+					<br />
+
+					<table id="SearchResultTable" border="0" cellspacing="0"
+						cellpadding="0" width="100%">
+						<tr>
+							<th class="sh" align="left">GUID&nbsp;</th>
+							<th class="sh" align="left">Date&nbsp;</th>
+							<th class="sh" align="left">Type&nbsp;</th>
+							<th class="sh" align="left">Name&nbsp;</th>
+							<th class="sh" align="left">Mime&nbsp;</th>
+							<th class="sh" align="left">Size&nbsp;</th>
+							<th class="sh" align="left">Creator&nbsp;</th>
+							<th class="sh" align="left">Retention&nbsp;</th>
+
+							<th class="sh" align="center">Meta&nbsp;</th>
+							<th class="sh" align="center">Download</th>
+						</tr>
+						${tableRows}
+					</table>
+
+					<br />
+
+					<table border="0" cellspacing="0" cellpadding="0" width="100%"">
+						<tr>
+							<td align="left"><input type="button" class="button"
+								name="btnFirst" value=" |&lt;&lt; " id="btnFirst" ${buttonPageFirst}/>
+								<input type="button" class="button" name="btnPrev"
+								value=" &lt; " id="btnPrev" ${buttonPrevious}/></td>
+							<td align="center">Page ${currentPage} to ${maxPages} (
+								${documentCount} records ) <b id="errorMessage">${resultMessage}</b>
+							</td>
+							<td align="right"><input type="button" class="button"
+								name="btnNext" value=" &gt; " id="btnNext" ${buttonNext}/> <input
+								type="button" class="button" name="btnLast" value=" &gt;&gt;| "
+								id="btnLast" ${buttonPageLast}/></td>
+						</tr>
+					</table>
+					<br />
+				</form></td>
+		</tr>
+		<tr>
+			<td class="footer" align="right">revision: ${SVNRevision} <a
+				href="http://bgbsd0.eur.cchbc.com/">BSD Team</a>
+			</td>
+		</tr>
+	</table>
+
+<!-- gray background -->
+<div id="grayBackground">&nbsp;</div>
+
+<!-- viewAddDialog -->
+<script type="text/javascript">
+function documentMeta(documentGUID) {
+	viewMetaDataDialog(true);
+	document.getElementById('viewMetaDataDialogTitle').innerHTML = "Document "+documentGUID+" Meta";
+	$.get('ajax?operation=meta&documentGUID='+documentGUID+'&time=' + Math.random(), function(data) {
+		var jsonObj = $.parseJSON(data);
+		var jsonPretty = JSON.stringify(jsonObj.content, null, '\t');
+		
+		document.getElementById('viewMetaDataDialogID').innerHTML = documentGUID;
+		document.getElementById('viewMetaDataDialogTitle').innerHTML = jsonObj.title;
+		document.getElementById('divDocumentMetaData').value = jsonPretty;
+	});
+}
+function updateMeta() {
+	var documentGUID = document.getElementById('viewMetaDataDialogID').innerHTML;
+	var newMeta = document.getElementById('divDocumentMetaData').value;
+	$.post( 'ajax?operation=updateMeta&documentGUID='+documentGUID+'&time=' + Math.random(),
+			{ meta: newMeta }, function( data, status ) { 
+		if(status == "success"){
+			var jsonObj = $.parseJSON(data);
+			if(jsonObj.ok){
+				var jsonPretty = JSON.stringify(jsonObj.content, null, '\t');
+				document.getElementById('viewMetaDataDialogTitle').innerHTML = jsonObj.title;
+				document.getElementById('divDocumentMetaData').value = jsonPretty;
+				document.getElementById('viewMetaDataInfo').innerHTML = "updated successfuly!";
+			}else{
+				document.getElementById('viewMetaDataDialogTitle').innerHTML = jsonObj.title;
+				document.getElementById('viewMetaDataInfo').innerHTML = jsonObj.content;
+			}
+		}else{
+			document.getElementById('viewMetaDataInfo').innerHTML = status;
+		}
+	}); 
+}
+function viewMetaDataDialog(n){
+	document.getElementById('grayBackground').style.visibility = n?'visible':'hidden';
+	document.getElementById('viewMetaDataDialog').style.visibility = n?'visible':'hidden';
+}
+</script>
+<div id="viewMetaDataDialog">
+<table style="border-collapse: collapse; padding: 0px; width:100%; height:100%;background: transparent;">
+<tr><td valign="middle" align="center">
+<table style="border-collapse: collapse; padding: 0px; background-color:#fff; color:#000; border: #223 2px solid;">
+<tr><td valign="top" align="left" style="padding: 0px;">
+<table style="border-collapse: collapse; padding: 0px; width:100%;" ><tr>
+<td nowrap="nowrap" class="button" style="font-size: 14px; padding: 2px 6px 4px 6px;">
+<span id="viewMetaDataDialogID"></span>&nbsp;&nbsp;<span id="viewMetaDataDialogTitle"></span>
+</td></tr></table>
+<table style="border-collapse: collapse; width:100%; padding: 10px 10px; font-size:11px;">	
+	<tr>
+		<td style="padding: 5px 5px;" colspan="2">	
+		<textarea rows="12" cols="90" id="divDocumentMetaData"></textarea>	 
+		</td>
+	</tr>	
+	<tr>
+		<td align="left" style="padding: 5px 5px;">		
+	   	 <div style="align: left;">
+			<input type="button" name="update" value="Update" onClick="javascript: updateMeta();" class="button"/>&nbsp;
+			<b style="color: #00A;" id="viewMetaDataInfo"></b>
+		</div>
+		</td>
+		<td align="right" style="padding: 5px 5px;">		
+	   	 <div style="align: left;">
+			<input type="button" name="close" value="Close" onClick="javascript: viewMetaDataDialog(false);" class="button"/>&nbsp;
+		</div>
+		</td>
+	</tr>
+</table>
+</td></tr></table>
+</td></tr></table>
+</div>
+	
+</body>
+</html>

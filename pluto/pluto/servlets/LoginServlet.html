@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>StorageEngine</title>
+<meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+<link type="text/css" href="file/style.css" rel="stylesheet" />
+<script type="text/javascript" src="file/jquery-1.4.4.min.js"></script>
+<script type="text/javascript" src="file/jquery-ui-1.8.10.custom.min.js"></script>
+</head>
+<body>
+	<table width="100%" border="0" cellspacing="0" cellpadding="0">
+		<tr>
+			<td class="header">
+				<h1>StorageEngine</h1>
+			</td>
+		</tr>
+		<tr>
+			<td align="center"><br />
+				<form method="post" id="theForm">
+					<input type="hidden" name="action" value="login" />
+					<table border="0" cellspacing="0" cellpadding="0">
+						<tr>
+							<th class="sh" colspan=2>Log in via Domain Authentication</th>
+						</tr>
+						<tr>
+							<td align="right" style="padding: 2px 0px 2px 0px;">user
+								name:</td>
+							<td align="right" style="padding: 2px 0px 2px 0px;"><input
+								name="username" value="${username}" type="text" id="username"
+								title="Domain Username" /></td>
+						</tr>
+						<tr>
+							<td align="right" style="padding-top: 2px;">password:</td>
+							<td align="right" style="padding-bottom: 2px;"><input
+								name="password" value="" type="password" id="password"
+								title="Domain Password" /></td>
+						</tr>
+						<tr>
+							<td align=right colspan=2><input type="submit" name="login"
+								value="Log in" id="buttonlogin" class="button" /></td>
+						</tr>
+					</table>
+					<br /> <b style="color: #A00;">${errorMessage}</b>
+				</form></td>
+		</tr>
+		<tr>
+			<td class="footer" align="right">revision: ${SVNRevision} <a
+				href="http://bgbsd0.eur.cchbc.com/">BSD Team</a>
+			</td>
+		</tr>
+	</table>
+</body>
+</html>
