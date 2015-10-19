@@ -14,6 +14,7 @@ import pluto.managers.WebManager;
 import utils.LocalAuthentication;
 
 public class Pluto {
+
 	private static Pluto instance;
 	private static String processName;
 
@@ -24,6 +25,7 @@ public class Pluto {
 
 	public final static String PROPERTIES_FILE = Pluto.class.getSimpleName() + ".properties";
 	public final Properties properties = new Properties();
+	public final long START_TIME = System.currentTimeMillis();
 	public final String SVNRevision;
 
 	public static void main(String[] args) throws Exception {
@@ -72,7 +74,7 @@ public class Pluto {
 
 		// initialize managers
 		dbManager = new DBManager(properties);
-		webManager = null;// new WebManager(properties);
+		webManager = new WebManager(properties);
 		authenticationManager = new LocalAuthentication();
 		sessionManager = new SessionManager(properties, authenticationManager, dbManager);
 
@@ -109,10 +111,12 @@ public class Pluto {
 			Log.log("------------- stoping: " + processName);
 			try {
 				instance.webManager.stop();
-			} catch (Throwable e) {}
+			} catch (Throwable e) {
+			}
 			try {
 				instance.dbManager.flushPool();
-			} catch (Throwable e) {}
+			} catch (Throwable e) {
+			}
 			Log.log("------------- stoped: " + processName);
 		}
 	}

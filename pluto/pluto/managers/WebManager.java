@@ -2,22 +2,19 @@ package pluto.managers;
 
 import java.util.EnumSet;
 import java.util.Properties;
+
 import javax.servlet.DispatcherType;
+
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+
 import pluto.core.Log;
-import pluto.servlets.AjaxServlet;
-import pluto.servlets.DownloadServlet;
 import pluto.servlets.FileFilter;
-import pluto.servlets.LogViewServlet;
 import pluto.servlets.LoginServlet;
-import pluto.servlets.SearchServlet;
-import pluto.servlets.UpdateServlet;
-import pluto.servlets.UploadServlet;
+import pluto.servlets.StatusServlet;
 
 public class WebManager {
-	public static final String WEB_SERVER_NAME = "web.server.name";
-	public static final String WEB_SERVER_PORT = "web.server.port";
+	public static final String WEB_SERVER_PORT = "PLUTO.Web.Port";
 	public static final int UPLOAD_LIMIT = 1024 * 1024; // 1mb
 
 	private final org.eclipse.jetty.server.Server webServer;
@@ -25,16 +22,12 @@ public class WebManager {
 	public WebManager(Properties properties) {
 		String key;
 
-		String serverName = properties.getProperty(key = WEB_SERVER_NAME, null);
-		if (serverName == null) {
-			Log.illegalState("Define " + key + " in property file");
-		}
-
 		String serverPort = properties.getProperty(key = WEB_SERVER_PORT, null);
 		if (serverPort == null) {
 			Log.illegalState("Define " + key + " in property file");
 		}
-		int port = 8080;
+
+		int port = 0;
 		try {
 			port = Integer.parseInt(serverPort, 10);
 		} catch (Exception e) {
@@ -52,12 +45,7 @@ public class WebManager {
 		context.addServlet(new ServletHolder(loginServlet), "/");
 		context.addServlet(new ServletHolder(loginServlet), "/login");
 		context.addServlet(new ServletHolder(loginServlet), "/favicon.ico");
-		context.addServlet(new ServletHolder(new SearchServlet()), "/search");
-		context.addServlet(new ServletHolder(new LogViewServlet()), "/logview");
-		context.addServlet(new ServletHolder(new AjaxServlet()), "/ajax");
-		context.addServlet(new ServletHolder(new DownloadServlet()), "/download");
-		context.addServlet(new ServletHolder(new UpdateServlet()), "/update");
-		context.addServlet(new ServletHolder(new UploadServlet()), "/upload");
+		context.addServlet(new ServletHolder(new StatusServlet()), "/status");
 
 		context.addFilter(FileFilter.class, FileFilter.PREFIX + "*", EnumSet.of(DispatcherType.REQUEST));
 	}
