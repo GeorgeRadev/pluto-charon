@@ -52,7 +52,7 @@ public class LoginServlet extends HttpServlet {
 		if (Boolean.TRUE.equals(session.getAttribute(LOGGED_ATTRIBUTE))) {
 			response.setStatus(HttpServletResponse.SC_MOVED_TEMPORARILY);
 			final String contextPath = request.getContextPath();
-			response.setHeader("Location", contextPath + "/search");
+			response.setHeader("Location", contextPath + "/status");
 			return;
 		}
 
@@ -71,7 +71,7 @@ public class LoginServlet extends HttpServlet {
 					session.setAttribute(LOGGED_ATTRIBUTE, Boolean.TRUE);
 					session.setAttribute(LOGGED_NAME, cx.username);
 					final String contextPath = request.getContextPath();
-					response.setHeader("Location", contextPath + "/search");
+					response.setHeader("Location", contextPath + "/status");
 					return;
 				} else {
 					page.setVar("errorMessage", "user is not autorized for access!");

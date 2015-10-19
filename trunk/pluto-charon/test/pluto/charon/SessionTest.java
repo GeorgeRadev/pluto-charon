@@ -68,7 +68,7 @@ public class SessionTest extends TestCase {
 		assertEquals("2", result);
 
 		// source
-		result = client.plutoExecute("function func(a,b){return a+b;}");
+		result = client.plutoExecute("function func(a,b){return (a) + (b);}");
 		assertEquals("function func(a,b){return (a) + (b);}", result);
 
 		// call
