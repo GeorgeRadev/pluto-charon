@@ -1,0 +1,258 @@
+package pluto.managers;
+
+import java.io.PrintWriter;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Properties;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import javax.activation.CommandMap;
+import javax.activation.DataHandler;
+import javax.activation.MailcapCommandMap;
+import pluto.charon.Utils;
+import pluto.core.Log;
+import sun.rmi.transport.Transport;
+import com.sun.xml.internal.messaging.saaj.packaging.mime.MessagingException;
+import com.sun.xml.internal.messaging.saaj.packaging.mime.internet.MimeBodyPart;
+import com.sun.xml.internal.messaging.saaj.packaging.mime.internet.MimeMultipart;
+
+public class MailManager {
+	public static final String MAIL_SMTP = "mail.smtp";
+	public static final String MAIL_SMTP_USER = "mail.smtp.user";
+	public static final String MAIL_SMTP_PASSWORD = "mail.smtp.password";
+
+	public static final String MAIL_FROM = "mail.from";
+	public static final String MAIL_TO = "mail.to";
+	public static final String MAIL_SUBJECT = "mail.subject";
+
+	private final ConcurrentLinkedQueue<Mail> mailQueue;
+	private final String mailsmtp;
+	private final String mailUser;
+	private final String mailPassword;
+	private final String mailFrom;
+	private final String mailTo;
+	private final String mailSubject;
+
+	private final SimpleDateFormat simpleDateTimeFormater = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+	final Properties maiProperties = System.getProperties();
+
+	static {
+		// add handlers for main MIME types
+		MailcapCommandMap mcap = new MailcapCommandMap();
+		mcap.addMailcap("text/plain;; x-java-content-handler=com.sun.mail.handlers.text_plain");
+		mcap.addMailcap("text/html;; x-java-content-handler=com.sun.mail.handlers.text_html");
+		mcap.addMailcap("text/xml;; x-java-content-handler=com.sun.mail.handlers.text_xml");
+		mcap.addMailcap("multipart/*;; x-java-content-handler=com.sun.mail.handlers.multipart_mixed; x-java-fallback-entry=true");
+		mcap.addMailcap("message/rfc822;; x-java-content-handler=com.sun.mail.handlers.message_rfc822");
+		CommandMap.setDefaultCommandMap(mcap);
+	}
+
+	public MailManager(Properties properties) {
+		mailsmtp = properties.getProperty(MAIL_SMTP);
+		mailUser = properties.getProperty(MAIL_SMTP_USER, "");
+		mailPassword = properties.getProperty(MAIL_SMTP_PASSWORD, "");
+		mailFrom = properties.getProperty(MAIL_FROM);
+		mailTo = properties.getProperty(MAIL_TO);
+		mailSubject = properties.getProperty(MAIL_SUBJECT);
+		if (mailsmtp == null || mailUser == null || mailPassword == null || mailFrom == null || mailTo == null
+				|| mailSubject == null) {
+			Log.illegalState("(mail.smtp, mail.from, mail.to, mail.subject) not defined in property file");
+		}
+
+		mailQueue = new ConcurrentLinkedQueue<Mail>();
+		maiProperties.put("mail.smtp.host", mailsmtp);
+	}
+
+	public static class Mail {
+		public final String subject, content;
+
+		public Mail(String subject, String content) {
+			this.subject = subject;
+			this.content = content;
+		}
+	}
+
+	public boolean sendMail(Date date, String mailContent) {
+		// sendMail("" + mailSubject + " " +
+		// simpleDateTimeFormater.format(date), mailContent);
+		mailQueue.add(new Mail("" + mailSubject + " " + simpleDateTimeFormater.format(date), mailContent));
+		return true;
+	}
+
+	public boolean sendMailNoData(Date date) {
+		String subject = "No records were imported at " + Utils.dateToString(date) + ". ";
+		// sendMail(subject, subject +
+		// "Please, check that audit files are transfered in the import directories!");
+		mailQueue.add(new Mail(subject, subject
+				+ "Please, check that audit files are transfered in the import directories!"));
+		return true;
+	}
+
+	/**
+	 * Sends email with the content given as HTML string as an input parameter,
+	 * subject specified and adds attachment if the last parameter is not null
+	 * 
+	 * @param mailSubject
+	 * @param mailContent
+	 * @throws MessagingException
+	 */
+	public boolean sendMail(String mailSubject, String mailContent) {
+		try {
+			Session session = Session.getDefaultInstance(maiProperties, null);
+			MimeMessage message = new MimeMessage(session);
+			message.setFrom(new InternetAddress(mailFrom));
+
+			String[] mailToArray = Utils.split(mailTo, ',');
+			InternetAddress[] to_address = new InternetAddress[mailToArray.length];
+			for (int i = 0; i < mailToArray.length; i++) {
+				to_address[i] = new InternetAddress(mailToArray[i]);
+				message.addRecipient(Message.RecipientType.TO, to_address[i]);
+			}
+
+			message.setSubject(mailSubject);
+
+			Multipart multipart = new MimeMultipart();
+
+			// create the message part
+			MimeBodyPart messageBodyPart = new MimeBodyPart();
+
+			// fill message
+			StringBuilder messageBody = new StringBuilder(10240);
+			messageBody.append(mailContent);
+
+			// *Add the message part
+			messageBodyPart.setContent(messageBody.toString(), "text/html");
+			multipart.addBodyPart(messageBodyPart);
+			message.setContent(multipart);
+
+			Transport transport = session.getTransport("smtp");
+			transport.connect(mailsmtp, mailUser, mailPassword);
+			transport.sendMessage(message, message.getAllRecipients());
+			transport.close();
+			return true;
+
+		} catch (Exception e) {
+			screenTraceAndCause(e);
+			Log.screen("fail to send mail !!!");
+			return false;
+		}
+	}
+
+	void screenTraceAndCause(Throwable e) {
+		Throwable t = e.getCause();
+		if (t != null) {
+			screenTraceAndCause(t);
+		}
+		StackTraceElement[] stacktrace = e.getStackTrace();
+		for (int i = stacktrace.length - 1; i >= 0; i--) {
+			Log.screen("     " + stacktrace[i].toString());
+		}
+		Log.screen(e.getMessage());
+	}
+
+	/**
+	 * Sends email with the content given as HTML string as an input parameter,
+	 * subject specified and adds attachment
+	 * 
+	 * @param mailSubject
+	 * @param mailContent
+	 * @param attachmentName
+	 * @param attachmentType
+	 *            ex: "application/excel"
+	 * @param attachmentContent
+	 * @throws MessagingException
+	 */
+	public void sendMail(String mailSubject, String mailContent, String attachmentName, String attachmentType,
+			byte[] attachmentContent) throws MessagingException {
+
+		Session session = Session.getDefaultInstance(maiProperties, null);
+		MimeMessage message = new MimeMessage(session);
+		message.setFrom(new InternetAddress(mailFrom));
+
+		String[] mailToArray = Utils.split(mailTo, ',');
+		InternetAddress[] to_address = new InternetAddress[mailToArray.length];
+		for (int i = 0; i < mailToArray.length; i++) {
+			to_address[i] = new InternetAddress(mailToArray[i]);
+			message.addRecipient(Message.RecipientType.TO, to_address[i]);
+		}
+
+		message.setSubject(mailSubject);
+
+		Multipart multipart = new MimeMultipart();
+
+		// create the message part
+		MimeBodyPart messageBodyPart = new MimeBodyPart();
+
+		// fill message
+		StringBuilder messageBody = new StringBuilder(10240);
+		messageBody.append(mailContent);
+
+		// *Add the message part
+		messageBodyPart.setContent(messageBody.toString(), "text/html");
+		multipart.addBodyPart(messageBodyPart);
+
+		{
+			// Create the email attachment file
+			MimeBodyPart attachment = new MimeBodyPart();
+			ByteArrayDataSource ds = new ByteArrayDataSource(attachmentContent, attachmentType);
+			attachment.setDataHandler(new DataHandler(ds));
+			attachment.setFileName(attachmentName);
+
+			// *Add the attachment part
+			multipart.addBodyPart(attachment);
+		}
+		message.setContent(multipart);
+
+		Transport transport = session.getTransport("smtp");
+		transport.connect(mailsmtp, mailUser, mailPassword);
+		transport.sendMessage(message, message.getAllRecipients());
+		transport.close();
+	}
+
+	public boolean mailQueueIsEmpty() {
+		return mailQueue.isEmpty();
+	}
+
+	public int mailQueueSize() {
+		if (mailQueue.isEmpty()) {
+			return 0;
+		} else {
+			return mailQueue.size();
+		}
+	}
+
+	public void sendMailQueue() {
+		// check if there is a mail for sending and try to send it
+		if (!mailQueue.isEmpty()) {
+			synchronized (this) {
+				Mail mail = mailQueue.peek();
+				if (sendMail(mail.subject, mail.content)) {
+					mailQueue.poll();
+				}
+			}
+		}
+	}
+
+	public void dumpMailQueue(PrintWriter writer) {
+		if (mailQueue.isEmpty()) {
+			writer.write("no mails in the queue.");
+		}
+		synchronized (this) {
+			int i = 0;
+			for (Mail mail : mailQueue) {
+				i++;
+				writer.write("message: " + i + "</br>");
+				writer.write("message subject: " + mail.subject + "</br>");
+				writer.write("message body: " + mail.content + "</br>");
+				writer.write("&nbsp;</br>&nbsp;</br>");
+			}
+		}
+	}
+
+	public void poolMessage() {
+		if (!mailQueue.isEmpty()) {
+			synchronized (this) {
+				mailQueue.poll();
+			}
+		}
+	}
+}
