@@ -9,26 +9,39 @@ import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.util.List;
 import java.util.Map;
-import json.JSONBuilder;
-import json.JSONParser;
+
 import cx.Context;
 import cx.Parser;
 import cx.ast.Node;
+import cx.exception.ParserException;
 import cx.handlers.DatabaseHandler;
 import cx.handlers.DateHandler;
 import cx.handlers.MathHandler;
 import cx.handlers.StringHandler;
 import cx.handlers.SystemHandler;
+import json.JSONBuilder;
+import json.JSONParser;
 
 public class Charon {
 	private final Socket socket;
 	private final DataOutputStream outStream;
 	private final DataInputStream inStream;
-	private final JSONParser jsonParser;
 	private final JSONBuilder jsonBuilder;
 	private final Context cx;
+	private static final JSONParser jsonParser = new JSONParser();
+	private static final Parser cxParser = new Parser();
 	private final CharonCore core;
 
+	/**
+	 * Create CharonClient and connect to PlutoServer
+	 * 
+	 * @param host
+	 * @param port
+	 * @param timeout
+	 * @throws UnknownHostException
+	 * @throws IOException
+	 * @throws PlutoCharonException
+	 */
 	public Charon(String host, int port, int timeout) throws UnknownHostException, IOException, PlutoCharonException {
 		socket = new Socket(host, port);
 		if (timeout > 0) {
@@ -36,7 +49,6 @@ public class Charon {
 		}
 		outStream = new DataOutputStream(socket.getOutputStream());
 		inStream = new DataInputStream(socket.getInputStream());
-		jsonParser = new JSONParser();
 		jsonBuilder = new JSONBuilder();
 
 		cx = new Context();
@@ -50,25 +62,43 @@ public class Charon {
 		cx.addHandler(new CharonHandler(core));
 	}
 
+	/**
+	 * Close connection with server
+	 */
 	public void close() {
 		try {
 			inStream.close();
-		} catch (IOException e) {}
+		} catch (IOException e) {
+		}
 		try {
 			outStream.close();
-		} catch (IOException e) {}
+		} catch (IOException e) {
+		}
 		try {
 			socket.shutdownOutput();
-		} catch (IOException e) {}
+		} catch (IOException e) {
+		}
 		try {
 			socket.shutdownInput();
-		} catch (IOException e) {}
+		} catch (IOException e) {
+		}
 	}
 
+	/**
+	 * Close connection with server
+	 */
 	public void logout() {
 		close();
 	}
 
+	/**
+	 * Reads JSON message. All messages are send as UTF8Modified non null
+	 * containing through the socket stream.
+	 * 
+	 * @return
+	 * @throws PlutoCharonException
+	 * @throws IOException
+	 */
 	private Map<Object, Object> readMessage() throws PlutoCharonException, IOException {
 		Map<Object, Object> actionMessage = null;
 		{
@@ -78,7 +108,8 @@ public class Charon {
 				actionMessageStr = UTF8Modified.readUTFModifiedNull(inStream);
 			} catch (UTFDataFormatException e) {
 				// read till \0 on error
-				while (inStream.read() != 0) {}
+				while (inStream.read() != 0) {
+				}
 				throw new PlutoCharonException("problem with UTF format message: ", e);
 			} catch (SocketTimeoutException e) {
 				throw new PlutoCharonException("socket reading timeout - server not responding", e);
@@ -106,12 +137,25 @@ public class Charon {
 		}
 	}
 
+	/**
+	 * Verifies that the message contains ok:true inside, otherwize throw
+	 * exception with the error message
+	 * 
+	 * @param message
+	 * @throws PlutoCharonException
+	 */
 	private void validateMessage(Map<Object, Object> message) throws PlutoCharonException {
 		if (!Boolean.TRUE.equals(message.get(PlutoCharonConstants.OK))) {
 			throw new PlutoCharonException(String.valueOf(message.get(PlutoCharonConstants.MESSAGE)));
 		}
 	}
 
+	/**
+	 * Check if the PlutoServer responds
+	 * 
+	 * @throws IOException
+	 * @throws PlutoCharonException
+	 */
 	public void ping() throws IOException, PlutoCharonException {
 		jsonBuilder.reset();
 		jsonBuilder.reset().startObject();
@@ -126,6 +170,8 @@ public class Charon {
 	}
 
 	/**
+	 * log to the PlutoServer with provided credentials
+	 * 
 	 * @param username
 	 * @param password
 	 * @throws IOException
@@ -147,6 +193,15 @@ public class Charon {
 		validateMessage(message);
 	}
 
+	/**
+	 * Defines variable in the PlutoServer core table. all sources and JSON
+	 * objects are stored there.
+	 * 
+	 * @param id
+	 * @param value
+	 * @throws IOException
+	 * @throws PlutoCharonException
+	 */
 	public void plutoSet(String id, String value) throws IOException, PlutoCharonException {
 		if (id == null || id.length() <= 0) {
 			throw new PlutoCharonException("id is required");
@@ -170,6 +225,14 @@ public class Charon {
 		validateMessage(message);
 	}
 
+	/**
+	 * retrieves PlutoServer variable (JSON or source code)
+	 * 
+	 * @param id
+	 * @return
+	 * @throws IOException
+	 * @throws PlutoCharonException
+	 */
 	public String plutoGet(String id) throws IOException, PlutoCharonException {
 		if (id == null || id.length() <= 0) {
 			throw new PlutoCharonException("ID is required");
@@ -186,8 +249,8 @@ public class Charon {
 		validateMessage(message);
 		int length = PlutoCharonConstants.getMessageInt(message, PlutoCharonConstants.LENGTH);
 		if (length <= 0) {
-			throw new PlutoCharonException("server value for '" + PlutoCharonConstants.LENGTH
-					+ "' was expected to be positive value!");
+			throw new PlutoCharonException(
+					"server value for '" + PlutoCharonConstants.LENGTH + "' was expected to be positive value!");
 		}
 
 		// read length content from the socket
@@ -199,6 +262,14 @@ public class Charon {
 		return content;
 	}
 
+	/**
+	 * Search all PlutoServer defined variables by prefix.
+	 * 
+	 * @param prefix
+	 * @param limit
+	 * @return
+	 * @throws Exception
+	 */
 	@SuppressWarnings("unchecked")
 	List<String> plutoSearch(String prefix, int limit) throws Exception {
 		jsonBuilder.reset();
@@ -230,6 +301,13 @@ public class Charon {
 		return result;
 	}
 
+	/**
+	 * Execute CX script on PlutoServer
+	 * 
+	 * @param code
+	 * @return
+	 * @throws Exception
+	 */
 	String plutoExecute(String code) throws Exception {
 		if (code == null || code.length() <= 0) {
 			throw new PlutoCharonException("code is required");
@@ -248,8 +326,8 @@ public class Charon {
 		validateMessage(message);
 		int length = PlutoCharonConstants.getMessageInt(message, PlutoCharonConstants.LENGTH);
 		if (length <= 0) {
-			throw new PlutoCharonException("server value for '" + PlutoCharonConstants.LENGTH
-					+ "' was expected to be positive value!");
+			throw new PlutoCharonException(
+					"server value for '" + PlutoCharonConstants.LENGTH + "' was expected to be positive value!");
 		}
 
 		// read length content from the socket
@@ -261,29 +339,43 @@ public class Charon {
 		return content;
 	}
 
+	/**
+	 * creates a function call as CX script with all escaping and execute it on
+	 * PlutoServer.
+	 * 
+	 * @param functionName
+	 * @param arguments
+	 * @return
+	 * @throws Exception
+	 */
 	public String plutoCall(String functionName, Object... arguments) throws Exception {
-		String call = buildCall(functionName, arguments);
+		String call = Utils.buildCall(functionName, arguments);
 		return plutoExecute(call);
 	}
 
-	/* accepts only (String,Number,List,Map) types for arguments */
-	private String buildCall(String functionName, Object... parameters) {
-		StringBuilder call = new StringBuilder(2048);
-		call.append(functionName).append('(');
-		if (parameters.length > 0) {
-			for (Object obj : parameters) {
-				call.append(JSONBuilder.objectToJSON(obj)).append(',');
-			}
-			call.setLength(call.length() - 1);
-		}
-		call.append(");");
-		return call.toString();
-	}
-
-	public Object localExecute(String str) {
-		final Parser parser = new Parser(str);
-		List<Node> block = parser.parse();
+	/**
+	 * Execute CX script on the CharonClient.
+	 * 
+	 * @param str
+	 * @return
+	 */
+	public Object charonExecute(String str) {
+		List<Node> block = cxParser.parse(str);
 		Object result = cx.evaluate(block);
 		return result;
+	}
+
+	/**
+	 * creates a function call as CX script with all escaping and execute it on
+	 * CharonClient.
+	 * 
+	 * @param functionName
+	 * @param arguments
+	 * @return
+	 * @throws Exception
+	 */
+	public Object charonCall(String functionName, Object... arguments) throws Exception {
+		String call = Utils.buildCall(functionName, arguments);
+		return charonExecute(call);
 	}
 }

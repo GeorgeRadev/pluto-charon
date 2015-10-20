@@ -53,7 +53,7 @@ public class CharonHandler implements Handler {
 					try {
 						Object importObj = core.getValue(IMPORT + "." + arg.toString());
 						if (importObj instanceof String) {
-							result = core.charon.localExecute((String) importObj);
+							result = core.charon.charonExecute((String) importObj);
 						}
 					} catch (Exception e) {}
 				}
