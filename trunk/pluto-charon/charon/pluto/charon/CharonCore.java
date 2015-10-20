@@ -10,6 +10,22 @@ public class CharonCore {
 		this.charon = charon;
 	}
 
+	public void setValue(String key, String value) throws Exception {
+		charon.plutoSet(key, value);
+	}
+
+	public Object getValue(String key) throws Exception {
+		return charon.plutoGet(key);
+	}
+
+	public Object search(String prefix) throws Exception {
+		return charon.plutoSearch(prefix, 100);
+	}
+
+	public Object search(String prefix, int limit) throws Exception {
+		return charon.plutoSearch(prefix, limit);
+	}
+
 	public Object executeOnServer(String eval) throws Exception {
 		return charon.plutoExecute(eval);
 	}
@@ -18,15 +34,7 @@ public class CharonCore {
 		return charon.plutoCall(functionName, arguments);
 	}
 
-	public void setValue(String key, String value) throws Exception {
-		charon.plutoCall("core.setValue", key, value);
-	}
-
-	public Object getValue(String key) throws Exception {
-		return charon.plutoCall("core.getValue", key);
-	}
-
-	public Object findKeys(String prefix) throws Exception {
-		return charon.plutoCall("core.findKeys", prefix);
+	public String includeOnServer(String argument) throws Exception {
+		return charon.plutoCall("include", argument);
 	}
 }

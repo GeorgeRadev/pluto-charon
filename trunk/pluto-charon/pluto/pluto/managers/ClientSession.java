@@ -16,13 +16,14 @@ import pluto.charon.PlutoCharonConstants;
 import pluto.charon.PlutoCharonException;
 import pluto.charon.UTF8Modified;
 import pluto.core.Log;
-import pluto.handlers.PlutoHandler;
+import pluto.handlers.PlutoImportHandler;
 import cx.Context;
 import cx.Parser;
 import cx.ast.Node;
 import cx.handlers.DatabaseHandler;
 import cx.handlers.DateHandler;
 import cx.handlers.MathHandler;
+import cx.handlers.ObjectHandler;
 import cx.handlers.StringHandler;
 import cx.handlers.SystemHandler;
 
@@ -34,9 +35,10 @@ public class ClientSession implements Runnable {
 	private final JSONBuilder jsonBuilder;
 	private final Context cx;
 	private final Parser cxParser;
-	private final PlutoHandler core;
+	private final PlutoCore core;
 	private final SessionManager sessionManager;
 	private final DBManager dbManager;
+	private final IAuthenticationManager authenticationManager;
 	private final Connection connection;
 
 	// id generator for the threads
@@ -45,9 +47,11 @@ public class ClientSession implements Runnable {
 	private String currentUser = null;
 	final int id = ++idSequence;
 
-	public ClientSession(Socket clientsocket, SessionManager sessionManager, DBManager dbManager) throws IOException {
+	public ClientSession(Socket clientsocket, SessionManager sessionManager, DBManager dbManager,
+			IAuthenticationManager authenticationManager) throws IOException {
 		socket = clientsocket;
 		this.sessionManager = sessionManager;
+		this.authenticationManager = authenticationManager;
 		this.dbManager = dbManager;
 		this.connection = dbManager.beginTransaction();
 		outStream = new DataOutputStream(socket.getOutputStream());
@@ -59,13 +63,15 @@ public class ClientSession implements Runnable {
 		jsonBuilder = new JSONBuilder();
 
 		cx = new Context();
-		core = new PlutoHandler(this, dbManager);
-		cx.addHandler(core);
 		cx.addHandler(new StringHandler());
 		cx.addHandler(new DateHandler());
 		cx.addHandler(new MathHandler());
 		cx.addHandler(new DatabaseHandler());
-		cx.addHandler(new SystemHandler("system"));
+		// cx.addHandler(new SystemHandler("system"));
+
+		cx.addHandler(new PlutoImportHandler(cx, dbManager));
+		core = new PlutoCore(this, dbManager);
+		cx.addHandler(new ObjectHandler(core, "pluto"));
 		Log.log("new session started: " + clientsocket);
 	}
 
@@ -88,7 +94,8 @@ public class ClientSession implements Runnable {
 							String msg = "problem with UTF format message: ";
 							Log.error(msg, e);
 							// read till \0 on error
-							while (inStream.read() != 0) {}
+							while (inStream.read() != 0) {
+							}
 							returnError(msg + e.getMessage(), PlutoCharonConstants.STACKTRACE,
 									Arrays.asList(e.getStackTrace()).toString());
 							continue;
@@ -167,17 +174,20 @@ public class ClientSession implements Runnable {
 						ever = false;
 					}
 				}
-			}// for ever
+			} // for ever
 		} finally {
 			try {
 				socket.shutdownInput();
-			} catch (IOException e) {}
+			} catch (IOException e) {
+			}
 			try {
 				socket.shutdownOutput();
-			} catch (IOException e) {}
+			} catch (IOException e) {
+			}
 			try {
 				socket.close();
-			} catch (IOException e) {}
+			} catch (IOException e) {
+			}
 
 			sessionManager.detachSession(this);
 		}
@@ -255,11 +265,15 @@ public class ClientSession implements Runnable {
 		String user = PlutoCharonConstants.getMessageString(actionMessage, PlutoCharonConstants.USER);
 		String pass = PlutoCharonConstants.getMessageString(actionMessage, PlutoCharonConstants.PASSWORD);
 
-		authorized = true;
-		// checkAuthentication(currentUser = user.toString(), pass.toString());
-		if (authorized) {
+		boolean _authorized = authenticationManager.checkAutorization(user)
+				&& authenticationManager.checkAuthentication(user, pass);
+ 
+		if (_authorized) {
+			authorized = _authorized;
+			currentUser = user;
 			returnOk("login successful!");
 		} else {
+			currentUser = null;
 			returnError("no correct authenticating message was recieved!");
 		}
 	}
@@ -314,8 +328,8 @@ public class ClientSession implements Runnable {
 		if (content == null) {
 			throw new IllegalStateException("pluto set content is null!");
 		} else if (content.length() != length) {
-			throw new IllegalStateException("server received size " + content.length()
-					+ " differ from the declared length " + length + "!");
+			throw new IllegalStateException(
+					"server received size " + content.length() + " differ from the declared length " + length + "!");
 		}
 		try {
 			List<Node> nodes = cxParser.parse(content);

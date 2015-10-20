@@ -6,11 +6,11 @@ import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import pluto.charon.Utils;
-import pluto.handlers.PlutoHandler;
+import pluto.managers.PlutoCore;
 import pluto.utils.RotatingQueue;
 
 public class Log {
-	public final static Logger LOGGER = Logger.getLogger(PlutoHandler.class.getSimpleName());
+	public final static Logger LOGGER = Logger.getLogger(PlutoCore.class.getSimpleName());
 
 	public static final int LOG_LIST_SIZE = 42;
 	public final static RotatingQueue<String> logList = new RotatingQueue<String>(LOG_LIST_SIZE);
@@ -20,7 +20,7 @@ public class Log {
 
 	static {
 		try {
-			FileHandler filehandler = new FileHandler("log" + File.separator + PlutoHandler.class.getName() + ".log",
+			FileHandler filehandler = new FileHandler("log" + File.separator + PlutoCore.class.getName() + ".log",
 					1024 * 1024, 20, true);
 			filehandler.setFormatter(new LogFormater());
 			LOGGER.addHandler(filehandler);

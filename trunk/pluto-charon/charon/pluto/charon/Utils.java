@@ -191,7 +191,12 @@ public class Utils {
 		return call.toString();
 	}
 
-	private static final Parser cxParser = new Parser();
+	private static final Parser cxParser;
+	static {
+		cxParser = new Parser();
+		cxParser.supportTryCatchThrow = true;
+		cxParser.supportSQLEscaping = true;
+	}
 
 	/**
 	 * @param str
@@ -218,5 +223,4 @@ public class Utils {
 			return null;
 		}
 	}
-
 }
