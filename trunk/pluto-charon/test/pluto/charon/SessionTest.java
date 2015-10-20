@@ -39,7 +39,7 @@ public class SessionTest extends TestCase {
 				}
 			};
 			Connection conn = db.getConnection();
-			db.ddlQuery(conn, "CREATE TABLE IF NOT EXISTS PLUTO_CORE ( pluto_key, pluto_line, pluto_value)");
+			db.ddlQuery(conn, "CREATE TABLE IF NOT EXISTS PLUTO_CORE (pluto_key, pluto_line, pluto_value)");
 			db.close(conn);
 		}
 		DBManager dbManager = new DBManager(properties);
@@ -61,7 +61,7 @@ public class SessionTest extends TestCase {
 		client.ping();
 
 		// local
-		assertEquals(2L, client.localExecute("1+1;"));
+		assertEquals(2L, client.charonExecute("1+1;"));
 
 		// execute
 		String result = client.plutoExecute("1+1;");

@@ -12,10 +12,10 @@ import pluto.utils.RotatingQueue;
 public class Log {
 	public final static Logger LOGGER = Logger.getLogger(PlutoHandler.class.getSimpleName());
 
-	public static final int LOG_LIST_SIZE = 32;
+	public static final int LOG_LIST_SIZE = 42;
 	public final static RotatingQueue<String> logList = new RotatingQueue<String>(LOG_LIST_SIZE);
 
-	public static final int ERROR_LIST_SIZE = 8;
+	public static final int ERROR_LIST_SIZE = 16;
 	public final static RotatingQueue<String> errorList = new RotatingQueue<String>(ERROR_LIST_SIZE);
 
 	static {

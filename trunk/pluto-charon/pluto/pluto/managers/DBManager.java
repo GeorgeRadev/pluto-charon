@@ -8,6 +8,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+
+import pluto.charon.PlutoCharonException;
 import pluto.charon.Utils;
 import pluto.core.Log;
 import sql.helper.SQLHelperManager;
@@ -99,7 +101,7 @@ public class DBManager extends SQLHelperManager {
 		return DriverManager.getConnection(connectionString);
 	}
 
-	public String plutoGet(Connection plutoConnection, String key) throws Exception {
+	public String plutoGet(Connection plutoConnection, String key) {
 		if (plutoConnection == null) {
 			Log.error(SQLError, SQLException);
 			throw new IllegalStateException(SQLError, SQLException);
@@ -128,13 +130,14 @@ public class DBManager extends SQLHelperManager {
 			if (pstmt != null) {
 				try {
 					pstmt.close();
-				} catch (SQLException x) {}
+				} catch (SQLException x) {
+				}
 			}
 		}
 		return value;
 	}
 
-	public boolean plutoSet(Connection plutoConnection, String key, String value) throws Exception {
+	public boolean plutoSet(Connection plutoConnection, String key, String value) throws PlutoCharonException {
 		if (plutoConnection == null) {
 			Log.error(SQLError, SQLException);
 			throw new IllegalStateException(SQLError, SQLException);
@@ -177,12 +180,14 @@ public class DBManager extends SQLHelperManager {
 			if (pstmt != null) {
 				try {
 					pstmt.close();
-				} catch (SQLException x) {}
+				} catch (SQLException x) {
+				}
 			}
 			try {
 				plutoConnection.rollback();
-			} catch (SQLException x) {}
-			throw new Exception(e);
+			} catch (SQLException x) {
+			}
+			throw new PlutoCharonException(e);
 		}
 	}
 
@@ -215,7 +220,8 @@ public class DBManager extends SQLHelperManager {
 			if (pstmt != null) {
 				try {
 					pstmt.close();
-				} catch (SQLException x) {}
+				} catch (SQLException x) {
+				}
 			}
 		}
 		return result;

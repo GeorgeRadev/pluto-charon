@@ -1,10 +1,17 @@
 package pluto.charon;
 
-import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
+import java.util.Map;
 import java.util.Vector;
+
+import cx.Parser;
+import cx.ast.Node;
+import cx.exception.ParserException;
+import json.JSONBuilder;
+import json.JSONParser;
 
 public class Utils {
 
@@ -18,7 +25,8 @@ public class Utils {
 		if (str != null) {
 			try {
 				res = Long.parseLong(str, 10);
-			} catch (Exception e) {}
+			} catch (Exception e) {
+			}
 		}
 		return res;
 	}
@@ -29,17 +37,19 @@ public class Utils {
 		if (str != null) {
 			try {
 				res = Integer.parseInt(str, 10);
-			} catch (Exception e) {}
+			} catch (Exception e) {
+			}
 		}
 		return res;
 	}
 
 	/** return occurrences of separator in string */
-	public static int count(final String string, final char separator) {
+	private static int count(final String string, final char separator) {
 		int count = 0;
 		for (int i = 0, len = string.length(); i < len; i++) {
 			final char c = string.charAt(i);
-			if (c == separator) count++;
+			if (c == separator)
+				count++;
 		}
 		return count;
 	}
@@ -61,7 +71,8 @@ public class Utils {
 			if (c == separator) {
 				if (i - s > 0) {
 					final String addstr = string.substring(s, i).trim();
-					if (addstr.length() > 0) tokens.addElement(addstr);
+					if (addstr.length() > 0)
+						tokens.addElement(addstr);
 				}
 				s = i + 1;
 			}
@@ -69,7 +80,8 @@ public class Utils {
 		// if there is remaining string - add it
 		if (len - s > 0) {
 			final String addstr = string.substring(s, i).trim();
-			if (addstr.length() > 0) tokens.addElement(addstr);
+			if (addstr.length() > 0)
+				tokens.addElement(addstr);
 		}
 
 		final String[] result = new String[tokens.size()];
@@ -145,85 +157,17 @@ public class Utils {
 		result.append('-');
 
 		int month = calendar.get(Calendar.MONTH) + 1;
-		if (month <= 9) result.append('0');
+		if (month <= 9)
+			result.append('0');
 		result.append(month);
 		result.append('-');
 
 		int day = calendar.get(Calendar.DAY_OF_MONTH);
-		if (day <= 9) result.append('0');
+		if (day <= 9)
+			result.append('0');
 		result.append(day);
 
 		return result.toString();
-	}
-
-	/**
-	 * move file to the : directory/system/YYYY/MM/DD/file .<br/>
-	 * if file exists. adds ".new" before the extension. if timeStamp is not
-	 * given(null) moves it to directory/system
-	 * 
-	 * @param file
-	 * @param directory
-	 * @param system
-	 * @param timeStamp
-	 * @return
-	 */
-	public static boolean moveFileToDirWithTimestamp(final File file, String directory, final String system,
-			final Calendar timeStamp) {
-		StringBuilder pathName = new StringBuilder(directory.length() + 1024);
-		pathName.append(directory);
-		if (system != null && system.length() > 0) {
-			pathName.append(system);
-			pathName.append(File.separatorChar);
-		}
-
-		if (timeStamp != null) {
-			pathName.append(timeStamp.get(Calendar.YEAR));
-			pathName.append(File.separatorChar);
-			final int month = timeStamp.get(Calendar.MONTH) + 1;
-			if (month <= 9) {
-				pathName.append('0');
-			}
-			pathName.append(month);
-			pathName.append(File.separatorChar);
-			final int day = timeStamp.get(Calendar.DAY_OF_MONTH);
-			if (day <= 9) {
-				pathName.append('0');
-			}
-			pathName.append(day);
-			final File dir = new File(pathName.toString());
-			if (!dir.exists() && !dir.mkdirs()) {
-				return false;
-			}
-			pathName.append(File.separatorChar);
-
-		} else {
-			final File dir = new File(pathName.toString());
-			if (!dir.exists() && !dir.mkdirs()) {
-				return false;
-			}
-		}
-		pathName.append(file.getName());
-
-		File destinationFile = new File(pathName.toString());
-		while (destinationFile.exists()) {
-			pathName.insert(pathName.length() - 3, "new.");
-			destinationFile = new File(pathName.toString());
-		}
-		return file.renameTo(destinationFile);
-	}
-
-	/**
-	 * return tomorrow in milliseconds
-	 */
-	public static long tomorrow() {
-		Calendar calendar = Calendar.getInstance();
-		calendar.set(Calendar.HOUR_OF_DAY, 0);
-		calendar.set(Calendar.MINUTE, 0);
-		calendar.set(Calendar.SECOND, 0);
-		calendar.set(Calendar.MILLISECOND, 0);
-		calendar.add(Calendar.DAY_OF_MONTH, 1);
-
-		return calendar.getTimeInMillis();
 	}
 
 	public static String timeSinceInSeconds(long time) {
@@ -233,11 +177,46 @@ public class Utils {
 		return min + "'" + sec + "''";
 	}
 
-	public static File validateDirectory(String dirName) {
-		File dir = new File(dirName);
-		if (!dir.exists() || !dir.isDirectory()) {
-			throw new IllegalStateException("Directory [" + dirName + "] does not exists or is not a directory!");
+	/* accepts only (String,Number,List,Map) types for arguments */
+	public static String buildCall(String functionName, Object... parameters) {
+		StringBuilder call = new StringBuilder(2048);
+		call.append(functionName).append('(');
+		if (parameters.length > 0) {
+			for (Object obj : parameters) {
+				call.append(JSONBuilder.objectToJSON(obj)).append(',');
+			}
+			call.setLength(call.length() - 1);
 		}
-		return dir;
+		call.append(");");
+		return call.toString();
 	}
+
+	private static final Parser cxParser = new Parser();
+
+	/**
+	 * @param str
+	 * @return parsed CX script or null if invalid.
+	 */
+	public static List<Node> asCX(String str) {
+		try {
+			return cxParser.parse(str);
+		} catch (ParserException e) {
+			return null;
+		}
+	}
+
+	private static final JSONParser jsonParser = new JSONParser();
+
+	/**
+	 * @param str
+	 * @return parsed JSON or null if invalid.
+	 */
+	public static Map<Object, Object> asJSON(String str) {
+		try {
+			return jsonParser.parseJSONString(str);
+		} catch (Exception e) {
+			return null;
+		}
+	}
+
 }

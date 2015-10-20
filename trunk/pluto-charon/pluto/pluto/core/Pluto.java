@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.lang.management.ManagementFactory;
 import java.util.Properties;
 import pluto.charon.Utils;
+import pluto.managers.AuthenticationManager;
 import pluto.managers.DBManager;
 import pluto.managers.IAuthenticationManager;
 import pluto.managers.ProcessLocker;
@@ -75,7 +76,7 @@ public class Pluto {
 		// initialize managers
 		dbManager = new DBManager(properties);
 		webManager = new WebManager(properties);
-		authenticationManager = new LocalAuthentication();
+		authenticationManager = new AuthenticationManager(dbManager);
 		sessionManager = new SessionManager(properties, authenticationManager, dbManager);
 
 		Thread hook = new Thread(new ShutdownRunnable());
