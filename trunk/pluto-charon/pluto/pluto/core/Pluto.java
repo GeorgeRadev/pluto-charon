@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.lang.management.ManagementFactory;
 import java.util.Properties;
+
 import pluto.charon.Utils;
 import pluto.managers.AuthenticationManager;
 import pluto.managers.DBManager;
@@ -12,7 +13,6 @@ import pluto.managers.IAuthenticationManager;
 import pluto.managers.ProcessLocker;
 import pluto.managers.SessionManager;
 import pluto.managers.WebManager;
-import utils.LocalAuthentication;
 
 public class Pluto {
 
