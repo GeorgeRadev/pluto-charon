@@ -58,7 +58,7 @@ public class Charon {
 		cx.addHandler(new MathHandler());
 		cx.addHandler(new DatabaseHandler());
 		cx.addHandler(new SystemHandler("system"));
-		
+
 		cx.addHandler(new CharonImportHandler(this));
 		core = new CharonCore(this);
 		cx.addHandler(new ObjectHandler(core, "charon"));
@@ -310,7 +310,7 @@ public class Charon {
 	 * @return
 	 * @throws Exception
 	 */
-	String plutoExecute(String code) throws Exception {
+	Object plutoExecute(String code) throws Exception {
 		if (code == null || code.length() <= 0) {
 			throw new PlutoCharonException("code is required");
 		}
@@ -338,6 +338,15 @@ public class Charon {
 		if (content.length() != length) {
 			throw new PlutoCharonException("server document received size differ from the declared length!");
 		}
+
+		List<Node> cxScript = Utils.asCX(content);
+		if (cxScript != null) {
+			return cxScript;
+		}
+		Map<Object, Object> json = Utils.asJSON(content);
+		if (json != null) {
+			return json;
+		}
 		return content;
 	}
 
@@ -350,7 +359,7 @@ public class Charon {
 	 * @return
 	 * @throws Exception
 	 */
-	public String plutoCall(String functionName, Object... arguments) throws Exception {
+	public Object plutoCall(String functionName, Object... arguments) throws Exception {
 		String call = Utils.buildCall(functionName, arguments);
 		return plutoExecute(call);
 	}
@@ -366,8 +375,8 @@ public class Charon {
 		Object result = cx.evaluate(block);
 		return result;
 	}
-	
-	public Object charonExecute(List<Node> block) { 
+
+	public Object charonExecute(List<Node> block) {
 		Object result = cx.evaluate(block);
 		return result;
 	}

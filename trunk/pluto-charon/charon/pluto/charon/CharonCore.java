@@ -10,11 +10,11 @@ public class CharonCore {
 		this.charon = charon;
 	}
 
-	public void setValue(String key, String value) throws Exception {
+	public void set(String key, String value) throws Exception {
 		charon.plutoSet(key, value);
 	}
 
-	public Object getValue(String key) throws Exception {
+	public Object get(String key) throws Exception {
 		return charon.plutoGet(key);
 	}
 
@@ -34,7 +34,7 @@ public class CharonCore {
 		return charon.plutoCall(functionName, arguments);
 	}
 
-	public String includeOnServer(String argument) throws Exception {
+	public Object includeOnServer(String argument) throws Exception {
 		return charon.plutoCall("include", argument);
 	}
 }

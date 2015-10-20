@@ -70,7 +70,7 @@ public class ClientSession implements Runnable {
 		// cx.addHandler(new SystemHandler("system"));
 
 		cx.addHandler(new PlutoImportHandler(cx, dbManager));
-		core = new PlutoCore(this, dbManager);
+		core = new PlutoCore(this);
 		cx.addHandler(new ObjectHandler(core, "pluto"));
 		Log.log("new session started: " + clientsocket);
 	}
@@ -267,7 +267,7 @@ public class ClientSession implements Runnable {
 
 		boolean _authorized = authenticationManager.checkAutorization(user)
 				&& authenticationManager.checkAuthentication(user, pass);
- 
+
 		if (_authorized) {
 			authorized = _authorized;
 			currentUser = user;
@@ -278,18 +278,29 @@ public class ClientSession implements Runnable {
 		}
 	}
 
-	private void doGet(Map<Object, Object> actionMessage) throws IOException, PlutoCharonException {
-		String id = PlutoCharonConstants.getMessageString(actionMessage, PlutoCharonConstants.ID);
-
-		String value;
+	String get(String id) {
 		try {
-			value = dbManager.plutoGet(connection, id);
+			return dbManager.plutoGet(connection, id);
 		} catch (Exception e) {
 			throw new IllegalStateException(e.getMessage(), e);
 		}
+	}
+
+	private void doGet(Map<Object, Object> actionMessage) throws IOException, PlutoCharonException {
+		String id = PlutoCharonConstants.getMessageString(actionMessage, PlutoCharonConstants.ID);
+
+		String value = get(id);
 		returnOk("pluto get was successful!", PlutoCharonConstants.LENGTH, value.length());
 		UTF8Modified.writeUTFModifiedNull(value, outStream);
 		outStream.flush();
+	}
+
+	void set(String key, String value) {
+		try {
+			dbManager.plutoSet(connection, key, value);
+		} catch (Exception e) {
+			throw new IllegalStateException(e.getMessage(), e);
+		}
 	}
 
 	private void doSet(Map<Object, Object> actionMessage) throws IOException, PlutoCharonException {
@@ -308,11 +319,7 @@ public class ClientSession implements Runnable {
 			}
 		}
 
-		try {
-			dbManager.plutoSet(connection, id, content);
-		} catch (Exception e) {
-			throw new IllegalStateException(e.getMessage(), e);
-		}
+		set(id, content);
 
 		returnOk("pluto set was successful!");
 	}
@@ -356,6 +363,14 @@ public class ClientSession implements Runnable {
 		}
 	}
 
+	List<String> search(String prefix, int limit) {
+		try {
+			return dbManager.plutoSearch(connection, prefix, limit);
+		} catch (Exception e) {
+			throw new IllegalStateException(e.getMessage(), e);
+		}
+	}
+
 	private void doSearch(Map<Object, Object> actionMessage) throws IOException, PlutoCharonException {
 		String prefix = "";
 		{
@@ -366,12 +381,7 @@ public class ClientSession implements Runnable {
 		}
 		int limit = PlutoCharonConstants.getMessageInt(actionMessage, PlutoCharonConstants.LIMIT);
 
-		List<String> result;
-		try {
-			result = dbManager.plutoSearch(connection, prefix, limit);
-		} catch (Exception e) {
-			throw new IllegalStateException(e.getMessage(), e);
-		}
+		List<String> result = search(prefix, limit);
 
 		returnOk("search was successful!", PlutoCharonConstants.LENGTH, result.size(), PlutoCharonConstants.RESULT,
 				result);
