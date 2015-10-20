@@ -13,10 +13,10 @@ import java.util.Map;
 import cx.Context;
 import cx.Parser;
 import cx.ast.Node;
-import cx.exception.ParserException;
 import cx.handlers.DatabaseHandler;
 import cx.handlers.DateHandler;
 import cx.handlers.MathHandler;
+import cx.handlers.ObjectHandler;
 import cx.handlers.StringHandler;
 import cx.handlers.SystemHandler;
 import json.JSONBuilder;
@@ -28,9 +28,10 @@ public class Charon {
 	private final DataInputStream inStream;
 	private final JSONBuilder jsonBuilder;
 	private final Context cx;
+	private final CharonCore core;
+
 	private static final JSONParser jsonParser = new JSONParser();
 	private static final Parser cxParser = new Parser();
-	private final CharonCore core;
 
 	/**
 	 * Create CharonClient and connect to PlutoServer
@@ -57,9 +58,10 @@ public class Charon {
 		cx.addHandler(new MathHandler());
 		cx.addHandler(new DatabaseHandler());
 		cx.addHandler(new SystemHandler("system"));
-
+		
+		cx.addHandler(new CharonImportHandler(this));
 		core = new CharonCore(this);
-		cx.addHandler(new CharonHandler(core));
+		cx.addHandler(new ObjectHandler(core, "charon"));
 	}
 
 	/**
@@ -361,6 +363,11 @@ public class Charon {
 	 */
 	public Object charonExecute(String str) {
 		List<Node> block = cxParser.parse(str);
+		Object result = cx.evaluate(block);
+		return result;
+	}
+	
+	public Object charonExecute(List<Node> block) { 
 		Object result = cx.evaluate(block);
 		return result;
 	}

@@ -27,6 +27,7 @@ public class AuthenticationManager implements IAuthenticationManager {
 
 			String _authentication = dbManager.plutoGet(conn, AUTHENTICATION_ROUTINE);
 			authentication = Utils.asCX(_authentication);
+			dbManager.close(conn);
 		} else {
 			throw new IllegalStateException(dbManager.SQLError, dbManager.SQLException);
 		}

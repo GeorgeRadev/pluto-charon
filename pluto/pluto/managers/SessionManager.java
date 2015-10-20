@@ -75,7 +75,7 @@ public class SessionManager implements Runnable {
 			try {
 				// attach new session
 				client = socket.accept();
-				ClientSession session = new ClientSession(client, this, dbManager);
+				ClientSession session = new ClientSession(client, this, dbManager, authenticationManager);
 				sessions.add(session);
 				Thread thread = new Thread(session);
 				thread.setName("sesion thread: " + session.id + " connection: " + client);
