@@ -124,7 +124,6 @@
 		<jar destfile="${charon.build.jar}">
 			<fileset dir="${charon.build.dir}"/>
 
-			<zipfileset src="lib/json.jar" excludes="META-INF/**/*"/>
 			<zipfileset src="lib/sql_helper.jar" excludes="META-INF/**/*"/>
 
 			<manifest>
@@ -135,7 +134,7 @@
 
 	<target name="svn" depends="test">
 		<property name="tmp.file" value="${test.build.dir}/temp.tmp"/>
-		<property name="revision.file" value="${test.build.dir}/pluto/core/SVNRevision.properties"/>
+		<property name="revision.file" value="${pluto.build.dir}/pluto/core/SVNRevision.properties"/>
 		<exec executable="svn" output="${tmp.file}">
 			<arg value="info"/>
 		</exec>
@@ -157,20 +156,18 @@
 			<fileset dir="${pluto.build.dir}" excludes="pluto/core/SVNRevision.properties"/>
 			<fileset dir="${test.build.dir}" includes="pluto/core/SVNRevision.properties"/>
 			<zipfileset src="lib/jetty-all-8.1.10.v20130312.jar" excludes="META-INF/**/*"/>
-			<zipfileset src="lib/jtds-1.2.5.jar" excludes="META-INF/**/*"/>
 			<zipfileset src="lib/servlet-api-3.0.jar" excludes="META-INF/**/*"/>
-			<zipfileset src="lib/commons-fileupload-1.2.2.jar" excludes="META-INF/**/*"/>
-			<zipfileset src="lib/commons-io-2.2.jar" excludes="META-INF/**/*"/>
-			<zipfileset src="lib/ganymed-ssh2-build210.jar" excludes="META-INF/**/*"/>
-			<zipfileset src="lib/jcifs-1.3.15.jar" excludes="META-INF/**/*"/>
-
-			<zipfileset src="lib/ojdbc14.jar" excludes="META-INF/**/*"/>
-			<zipfileset src="lib/db2jcc4.jar" excludes="META-INF/**/*"/>
-			<zipfileset src="lib/sqlite-jdbc-3.8.11.1.jar" excludes="META-INF/**/*"/>
-
-			<zipfileset src="lib/javax.mail-1.5.0.jar" excludes="META-INF/**/*"/>
-			<zipfileset src="lib/json.jar" excludes="META-INF/**/*"/>
+			
 			<zipfileset src="lib/sql_helper.jar" excludes="META-INF/**/*"/>
+			<!-- SQLite driver -->
+			<zipfileset src="lib/sqlite-jdbc-3.8.11.1.jar" excludes="META-INF/**/*"/>
+			<!-- ORACLE -->
+			<!--zipfileset src="lib/ojdbc6.jar" excludes="META-INF/**/*"/-->
+			<!-- MS SQL SERVER  driver-->
+			<!--zipfileset src="lib/jtds-1.2.5.jar" excludes="META-INF/**/*"/-->
+			<!-- DB2 driver -->
+			<!--zipfileset src="lib/db2jcc4.jar" excludes="META-INF/**/*"/-->
+
 
 			<manifest>
 				<attribute name="Main-Class" value="pluto.core.PlutoServer"/>
