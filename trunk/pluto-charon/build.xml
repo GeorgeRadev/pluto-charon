@@ -124,6 +124,7 @@
 		<jar destfile="${charon.build.jar}">
 			<fileset dir="${charon.build.dir}"/>
 
+			<zipfileset src="lib/cx-interpreter.jar" excludes="META-INF/**/*"/>
 			<zipfileset src="lib/sql_helper.jar" excludes="META-INF/**/*"/>
 
 			<manifest>
@@ -153,11 +154,11 @@
 
 		<jar destfile="${pluto.build.jar}">
 			<fileset dir="${charon.build.dir}"/>
-			<fileset dir="${pluto.build.dir}" excludes="pluto/core/SVNRevision.properties"/>
-			<fileset dir="${test.build.dir}" includes="pluto/core/SVNRevision.properties"/>
+			<fileset dir="${pluto.build.dir}"/>
 			<zipfileset src="lib/jetty-all-8.1.10.v20130312.jar" excludes="META-INF/**/*"/>
 			<zipfileset src="lib/servlet-api-3.0.jar" excludes="META-INF/**/*"/>
 			
+			<zipfileset src="lib/cx-interpreter.jar" excludes="META-INF/**/*"/>
 			<zipfileset src="lib/sql_helper.jar" excludes="META-INF/**/*"/>
 			<!-- SQLite driver -->
 			<zipfileset src="lib/sqlite-jdbc-3.8.11.1.jar" excludes="META-INF/**/*"/>
@@ -170,7 +171,7 @@
 
 
 			<manifest>
-				<attribute name="Main-Class" value="pluto.core.PlutoServer"/>
+				<attribute name="Main-Class" value="pluto.core.Pluto"/>
 			</manifest>
 		</jar>
 	</target>

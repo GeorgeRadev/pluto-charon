@@ -46,6 +46,7 @@ public class Pluto {
 	}
 
 	private Pluto() throws InterruptedException {
+		long time = System.currentTimeMillis();
 		instance = this;
 		processName = ManagementFactory.getRuntimeMXBean().getName();
 
@@ -86,9 +87,7 @@ public class Pluto {
 			// get ready...
 			authenticationManager.init();
 			// start Server
-			long time = System.currentTimeMillis();
 			sessionManager.start();
-			Log.log("STORAGE updated: " + Utils.timeSinceInSeconds(time));
 			// start web server
 			webManager.start();
 
@@ -101,6 +100,7 @@ public class Pluto {
 			System.exit(1);
 		}
 
+		Log.log("PLUTO Server initialized: " + Utils.timeSinceInSeconds(time));
 		System.out.println("to close this application, press Ctrl+C or kill the process: " + processName);
 		webManager.join();
 	}

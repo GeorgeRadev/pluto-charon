@@ -7,6 +7,7 @@ import java.io.UTFDataFormatException;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -19,6 +20,7 @@ import cx.handlers.MathHandler;
 import cx.handlers.ObjectHandler;
 import cx.handlers.StringHandler;
 import cx.handlers.SystemHandler;
+import cx.runtime.Function;
 import json.JSONBuilder;
 import json.JSONParser;
 
@@ -393,5 +395,22 @@ public class Charon {
 	public Object charonCall(String functionName, Object... arguments) throws Exception {
 		String call = Utils.buildCall(functionName, arguments);
 		return charonExecute(call);
+	}
+
+	/**
+	 * creates a function call as CX script with all escaping and execute it on
+	 * CharonClient.
+	 * 
+	 * @param functionName
+	 * @param arguments
+	 * @return
+	 * @throws Exception
+	 */
+	public Object charonFunction(Function function, Object... arguments) throws Exception {
+		return cx.callFunction(function, Arrays.asList(arguments));
+	}
+
+	public void addContextHandler(String name, Object handler) {
+		cx.addHandler(new ObjectHandler(handler, name));
 	}
 }
