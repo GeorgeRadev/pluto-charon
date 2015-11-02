@@ -1,13 +1,18 @@
 package pluto.charon;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.InputStreamReader;
 import java.sql.Connection;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import junit.framework.TestCase;
+
 import org.sqlite.JDBC;
+
+import cx.ast.Node;
+import junit.framework.TestCase;
 import pluto.core.Pluto;
 import pluto.managers.DBManager;
 import pluto.managers.SessionManager;
@@ -75,7 +80,7 @@ public class SessionTest extends TestCase {
 			String source = "function func(a,b){return (a) + (b);}";
 			result = client.plutoExecute(source);
 			assertTrue(result instanceof List);
-			assertEquals(source, ((List)result).get(0).toString());
+			assertEquals(source, ((List<?>) result).get(0).toString());
 
 			// call
 			result = client.plutoCall("'test substring'.substring", 4, 8);
@@ -84,8 +89,8 @@ public class SessionTest extends TestCase {
 			// frame
 			result = client.plutoExecute("new {a:2,b:'str'};");
 			assertTrue(result instanceof Map);
-			assertEquals("2", ((Map)result).get("a").toString());
-			assertEquals("str", ((Map)result).get("b").toString());
+			assertEquals("2", ((Map<?, ?>) result).get("a").toString());
+			assertEquals("str", ((Map<?, ?>) result).get("b").toString());
 
 			// search
 			client.plutoSet("id1", "value1");
@@ -95,7 +100,7 @@ public class SessionTest extends TestCase {
 			search = client.plutoSearch("", -1);
 			assertTrue(search.size() > 2);
 		}
-		
+
 		{// import
 			client.plutoSet("object1", "{a:1,b:'string'}");
 			Object obj = client.charonExecute("obj = import('object1');");
@@ -128,8 +133,33 @@ public class SessionTest extends TestCase {
 			assertEquals("string", str);
 		}
 
+		{// put a default program to server
+			String programName = "demo";
+			String program = fileToString("./test/demo.cx");
+			client.plutoSet(programName, program);
+			String str = String.valueOf(client.plutoGet(programName)); 
+			assertEquals(program, str); 
+			String programCode = client.plutoGet(programName);
+			List<Node> programAST = Utils.asCX(programCode);
+			client.charonExecute(programAST);
+		}
+
 		client.logout();
 		client.close();
 		sessionManager.stop();
+	}
+
+	String fileToString(String fileName) throws Exception {
+		BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(fileName), "UTF8"));
+		String line = null;
+		StringBuilder stringBuilder = new StringBuilder();
+
+		while ((line = reader.readLine()) != null) {
+			stringBuilder.append(line);
+			stringBuilder.append('\n');
+		}
+		reader.close();
+		return stringBuilder.toString();
+
 	}
 }

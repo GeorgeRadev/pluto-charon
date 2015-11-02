@@ -1,0 +1,60 @@
+var interface = {
+	columns:1,
+	align:'FILL', valign:'FILL', 
+	menu:[
+		{type:'action', id:'print', text:'print', icon:'icons/search.gif'},
+		{type:'action', id:'refresh', text:'refresh' , icon:'icons/refresh.png'}
+	],
+	toolbar:[
+		{type:'action', id:'print', tooltip:'print', icon:'icons/search.gif' },
+		{type:'action', id:'refresh', tooltip:'refresh', icon:'icons/refresh.png' }
+	], 
+	components:[
+		{type:'section',
+			text:'Editor.Contacts.Section.Search', 
+			columns:3, 
+			align:'FILL',
+			components:[
+				{type:'label',  text:'Editor.Contacts.Label.Search', valign:'CENTER' }, 
+				{type:'text',   id:'filterField', align:'FILL', valign:'CENTER' }, 
+				{type:'button', id:'searchButton', text:'Editor.Contacts.Button.Search', icon:'icons/search.png', width:80, height:20, valign:'CENTER' }
+			]
+		}, 
+		{type:'splitter', 
+			horizontal:72, 
+			align:'FILL', valign:'FILL',
+			components:[
+				{type:'section',
+					text:'Editor.Contacts.Section.Contacts', 
+					align:'FILL', valign:'FILL',
+					components:[
+						{type:'table',  id:'tableContacts', fullselection:true, align:'FILL', valign:'FILL' }, 
+						{type:'button', id:'limitButton', text:'Editor.Contacts.Label.Limit', check:true, align:'BEGINNING' }
+					]
+				}, 
+				{type:'section', 
+					text:'Editor.Contacts.Section.Info', 
+					columns:2, 
+					align:'FILL', valign:'FILL',
+					components:[
+						{type:'text',   id:'detailsText', html:true, colspan:2, align:'FILL', valign:'FILL' },
+						{type:'button', id:'editButton', text:'Editor.Contacts.Button.Edit', height:20, align:'FILL'},
+						{type:'button', id:'commentButton', text:'Editor.Contacts.Button.Comment', height:20, align:'FILL' },
+						{type:'button', id:'viewButton', text:'Editor.Contacts.Button.ViewComments', colspan:2, height:20, align:'FILL', valign:'BEGINNING' }
+					]
+				}
+			]
+		}
+	]
+};
+
+var handlers = {
+	onClick:function(componentId){
+		charonUI.messageBox('onClick','component ['+componentId+'] was clicked!');
+	},
+	
+	onSelection:function(componentId){
+	}
+};
+
+charonUI.createUI('demo page', interface, handlers);

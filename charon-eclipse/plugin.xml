@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+
+   <extension
+         point="org.eclipse.ui.editors">
+      <editor
+            class="charon.eclipse.editors.CharonEditor"
+            default="false"
+            extensions="cx"
+            icon="icons/execute_command.png"
+            id="charon.eclipse.editors.CharonUI"
+            name="CharonUI">
+      </editor>
+   </extension>
+   <extension
+         point="org.eclipse.ui.preferencePages">
+      <page
+            class="charon.eclipse.CharonPreferencePage"
+            id="charon.eclipse.settings"
+            name="Pluto-Charon Settings">
+      </page>
+   </extension>
+   <extension
+         point="org.eclipse.ui.menus">
+      <menuContribution
+            allPopups="false"
+            locationURI="toolbar:org.eclipse.ui.main.toolbar">
+         <toolbar
+               id="charon.eclipse.toolbar"
+               label="Charon Toolbar">
+            <control
+                  class="charon.eclipse.ToolbarContributor"
+                  id="CharonTool">
+            </control>
+            <command
+                  commandId="charon.eclipse.command"
+                  icon="icons/execute_command.png"
+                  label="Execute"
+                  style="push">
+            </command>
+            <command
+                  commandId="charon.eclipse.search"
+                  icon="icons/search.gif"
+                  label="Search"
+                  style="push">
+            </command>
+         </toolbar>
+      </menuContribution>
+   </extension>
+   <extension
+         point="org.eclipse.ui.perspectives">
+      <perspective
+            class="charon.eclipse.CharonPerspective"
+            icon="icons/execute_command.png"
+            id="charon.eclipse.perspective"
+            name="Charon">
+      </perspective>
+   </extension>
+   <extension
+         point="org.eclipse.ui.handlers">
+      <handler
+            class="charon.eclipse.commands.CharonCommand"
+            commandId="charon.eclipse.command">
+      </handler>
+      <handler
+            class="charon.eclipse.commands.CharonSearch"
+            commandId="charon.eclipse.search">
+      </handler>
+   </extension>
+
+</plugin>
