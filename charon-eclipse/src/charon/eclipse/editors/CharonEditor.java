@@ -17,7 +17,7 @@ import org.eclipse.ui.forms.widgets.Form;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 import org.eclipse.ui.part.EditorPart;
 
-import charon.eclipse.CharonPlugin;
+import charon.eclipse.CharonUI;
 import cx.runtime.Function;
 
 public class CharonEditor extends EditorPart implements Listener {
@@ -25,24 +25,27 @@ public class CharonEditor extends EditorPart implements Listener {
 	private FormToolkit toolkit;
 	private Form form;
 	private CharonEditorInput input;
-	private Map<String, Object> idToComponent;
-	private Map<Object, String> componentToId;
+	public final Map<String, Object> idToComponent = new HashMap<String, Object>();
+	public final Map<Object, String> componentToId = new HashMap<Object, String>();
 
 	@Override
 	public void init(IEditorSite site, IEditorInput input) throws PartInitException {
-		if (input instanceof CharonEditorInput) {
-			this.input = (CharonEditorInput) input;
-		} else {
+		if (!(input instanceof CharonEditorInput)) {
 			throw new IllegalStateException("EditorInput should be " + CharonEditorInput.class.getName());
 		}
+		this.input = (CharonEditorInput) input;
 		setSite(site);
 		setInput(input);
-		setTitleImage(CharonPlugin.getImage("icons/execute_command.png"));
+		setPartName(this.input.getName());
+	}
+
+	public void setName(String text) {
+		input.setName(text);
+		setPartName(input.getName());
 	}
 
 	public void dispose() {
 		toolkit.dispose();
-		super.dispose();
 	}
 
 	@Override
@@ -52,11 +55,14 @@ public class CharonEditor extends EditorPart implements Listener {
 		form.setText(((CharonEditorInput) getEditorInput()).getName());
 		toolkit.decorateFormHeading(form);
 
-		// createPartControl1(parent);
-		idToComponent = UIFactory.createUI(input.ui, null, toolkit, form);
+		idToComponent.putAll(UIFactory.createUI(input.ui, null, toolkit, form));
+
+		Object editorid = input.ui.get(UIFactory.ID);
+		if (editorid != null) {
+			idToComponent.put(editorid.toString(), input);
+		}
 
 		// create reverse map from object to ID
-		componentToId = new HashMap<Object, String>(idToComponent.size());
 		for (Entry<String, Object> entry : idToComponent.entrySet()) {
 			Object component = entry.getValue();
 			componentToId.put(component, entry.getKey());
@@ -75,23 +81,31 @@ public class CharonEditor extends EditorPart implements Listener {
 		case SWT.Selection:
 			// on click
 			// get onClick function and call it
-			Object handler = input.handlers.get("onClick");
+			Object handler = input.handlers.get(CharonUI.ON_CLICK);
 			if (handler == null) {
 				return;
 			}
 			if (handler instanceof Function) {
-				String objectID = componentToId.get(event.widget);
-				try {
-					input.client.charonFunction((Function) handler, objectID);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			} else if (handler instanceof CharonAction) {
-				String objectID = componentToId.get(event.data);
-				try {
-					input.client.charonFunction((Function) handler, objectID);
-				} catch (Exception e) {
-					e.printStackTrace();
+				if (event.data instanceof CharonAction) {
+					String objectID = componentToId.get(event.data);
+					try {
+						// showBusy(true);
+						input.charonIU.client.charonFunction((Function) handler, objectID);
+					} catch (Exception e) {
+						e.printStackTrace();
+					} finally {
+						// showBusy(false);
+					}
+				} else {
+					String objectID = componentToId.get(event.widget);
+					try {
+						// showBusy(true);
+						input.charonIU.client.charonFunction((Function) handler, objectID);
+					} catch (Exception e) {
+						e.printStackTrace();
+					} finally {
+						// showBusy(false);
+					}
 				}
 			}
 			break;
@@ -99,7 +113,11 @@ public class CharonEditor extends EditorPart implements Listener {
 	}
 
 	@Override
-	public void setFocus() {
+	public void doSave(IProgressMonitor monitor) {
+	}
+
+	@Override
+	public void doSaveAs() {
 	}
 
 	@Override
@@ -113,11 +131,7 @@ public class CharonEditor extends EditorPart implements Listener {
 	}
 
 	@Override
-	public void doSave(IProgressMonitor monitor) {
-	}
-
-	@Override
-	public void doSaveAs() {
+	public void setFocus() {
 	}
 
 }
