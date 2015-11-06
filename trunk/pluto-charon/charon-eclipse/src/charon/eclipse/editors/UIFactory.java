@@ -62,7 +62,7 @@ public class UIFactory {
 		return ui._createUI(uiJSON, form.getBody());
 	}
 
-	private static final String ID = "id";
+	public static final String ID = "id";
 	private static final String TYPE = "type";
 	private static final String COMPONENTS = "components";
 	private static final String TEXT = "text";

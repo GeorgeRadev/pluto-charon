@@ -7,17 +7,17 @@ import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IPersistableElement;
 
 import charon.eclipse.CharonPlugin;
-import pluto.charon.Charon;
+import charon.eclipse.CharonUI;
 
 public class CharonEditorInput implements IEditorInput {
+	public final CharonUI charonIU;
 	String title;
-	final Charon client;
-	final Map<?, ?> ui;
-	final Map<?, ?> handlers;
+	public final Map<?, ?> ui;
+	public final Map<?, ?> handlers;
 
-	public CharonEditorInput(Charon client, String title, Map<?, ?> ui, Map<?, ?> handlers) {
+	public CharonEditorInput(CharonUI charonIU, String title, Map<?, ?> ui, Map<?, ?> handlers) {
+		this.charonIU = charonIU;
 		this.title = title;
-		this.client = client;
 		this.ui = ui;
 		this.handlers = handlers;
 	}
@@ -27,6 +27,10 @@ public class CharonEditorInput implements IEditorInput {
 		return CharonPlugin.getImageDescriptor("icons/execute_command.png");
 	}
 
+	public void setName(String title) {
+		this.title = title;
+	}
+	
 	@Override
 	public String getName() {
 		return title;

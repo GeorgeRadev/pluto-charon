@@ -1,13 +1,14 @@
 var interface = {
+	id:'contaner',
 	columns:1,
 	align:'FILL', valign:'FILL', 
 	menu:[
-		{type:'action', id:'print', text:'print', icon:'icons/search.gif'},
-		{type:'action', id:'refresh', text:'refresh' , icon:'icons/refresh.png'}
+		{type:'action', id:'menuPrint', text:'print', icon:'icons/search.gif'},
+		{type:'action', id:'menuRefresh', text:'refresh' , icon:'icons/refresh.png'}
 	],
 	toolbar:[
-		{type:'action', id:'print', tooltip:'print', icon:'icons/search.gif' },
-		{type:'action', id:'refresh', tooltip:'refresh', icon:'icons/refresh.png' }
+		{type:'action', id:'toolPrint', tooltip:'print', icon:'icons/search.gif' },
+		{type:'action', id:'toolRefresh', tooltip:'refresh', icon:'icons/refresh.png' }
 	], 
 	components:[
 		{type:'section',
@@ -37,7 +38,7 @@ var interface = {
 					columns:2, 
 					align:'FILL', valign:'FILL',
 					components:[
-						{type:'text',   id:'detailsText', html:true, colspan:2, align:'FILL', valign:'FILL' },
+						{type:'list',   id:'list', html:true, colspan:2, align:'FILL', valign:'FILL' },
 						{type:'button', id:'editButton', text:'Editor.Contacts.Button.Edit', height:20, align:'FILL'},
 						{type:'button', id:'commentButton', text:'Editor.Contacts.Button.Comment', height:20, align:'FILL' },
 						{type:'button', id:'viewButton', text:'Editor.Contacts.Button.ViewComments', colspan:2, height:20, align:'FILL', valign:'BEGINNING' }
@@ -49,11 +50,25 @@ var interface = {
 };
 
 var handlers = {
+	onInit:function(){
+		charonUI.setText('filterField', 'demo text');
+		charonUI.setText('searchButton', 'search Button');
+		charonUI.setText('menuPrint', 'menu print');
+		charonUI.addItem('list', 'demo text');
+	},
+	
 	onClick:function(componentId){
 		charonUI.messageBox('onClick','component ['+componentId+'] was clicked!');
+		
+		if(componentId == 'searchButton'){
+			var newTitle = charonUI.getText('filterField');
+			charonUI.setText('contaner', newTitle);
+		}
 	},
 	
 	onSelection:function(componentId){
+	    var selection = charonUI.getText(componentId);
+		charonUI.messageBox('onClick','component ['+componentId+'] was clicked! selection:'+ selection+'!');
 	}
 };
 

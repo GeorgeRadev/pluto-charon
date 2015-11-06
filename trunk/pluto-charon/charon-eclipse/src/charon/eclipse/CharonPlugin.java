@@ -3,14 +3,20 @@ package charon.eclipse;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.ui.IWorkbench;
+import org.eclipse.ui.IWorkbenchListener;
+import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
+import charon.eclipse.editors.CharonEditor;
 import cx.ast.Node;
 import pluto.charon.Charon;
 import pluto.charon.Utils;
@@ -51,6 +57,22 @@ public class CharonPlugin extends AbstractUIPlugin {
 	public void start(BundleContext context) throws Exception {
 		super.start(context);
 		plugin = this;
+
+		IWorkbench workbench = PlatformUI.getWorkbench();
+
+		workbench.addWorkbenchListener(new IWorkbenchListener() {
+			public boolean preShutdown(IWorkbench workbench, boolean forced) {
+				final IWorkbenchPage activePage = workbench.getActiveWorkbenchWindow().getActivePage();				
+				for(CharonEditor editor: editors.keySet()){
+					activePage.closeEditor(editor, false);
+				}
+				return true;
+			}
+
+			public void postShutdown(IWorkbench workbench) {
+
+			}
+		});
 	}
 
 	/*
@@ -165,5 +187,15 @@ public class CharonPlugin extends AbstractUIPlugin {
 			stackTrace = stackTrace.substring(0, len);
 		}
 		MessageDialog.openError(null, "error", e.getMessage() + "\n" + stackTrace);
+	}
+
+	private ConcurrentHashMap<CharonEditor, String> editors = new ConcurrentHashMap<CharonEditor, String>();
+
+	public void addEditor(CharonEditor editor) {
+		editors.put(editor, "");
+	}
+
+	public void removeEditor(CharonEditor editor) {
+		editors.remove(editor);
 	}
 }
