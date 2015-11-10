@@ -153,6 +153,8 @@ public class DBManager extends SQLHelperManager {
 			pstmt.close();
 
 			if (value != null && value.length() > 0) {
+				sql = "INSERT INTO " + PLUTO_TABLE + "(pluto_key, pluto_line, pluto_value) VALUES(?,?,?)";
+				pstmt = plutoConnection.prepareStatement(sql);
 				final int length = value.length();
 				final int lines = (length / PLUTO_LINE_SIZE) + 1;
 				int start = 0;
@@ -161,15 +163,14 @@ public class DBManager extends SQLHelperManager {
 					if (end > length) {
 						end = length;
 					}
-					sql = "INSERT INTO " + PLUTO_TABLE + "(pluto_key, pluto_line, pluto_value) VALUES(?,?,?)";
-					pstmt = plutoConnection.prepareStatement(sql);
+					
 					pstmt.setString(1, key);
 					pstmt.setInt(2, line);
 					pstmt.setString(3, value.substring(start, end));
 					pstmt.executeUpdate();
-					pstmt.close();
 					start = end;
 				}
+				pstmt.close();
 				pstmt = null;
 			}
 			plutoConnection.commit();

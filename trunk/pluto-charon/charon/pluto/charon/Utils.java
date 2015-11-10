@@ -1,11 +1,23 @@
 package pluto.charon;
 
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.X509Certificate;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Vector;
+
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509KeyManager;
+import javax.net.ssl.X509TrustManager;
 
 import cx.Parser;
 import cx.ast.Node;
@@ -192,6 +204,7 @@ public class Utils {
 	}
 
 	private static final Parser cxParser;
+
 	static {
 		cxParser = new Parser();
 		cxParser.supportTryCatchThrow = true;
@@ -203,6 +216,9 @@ public class Utils {
 	 * @return parsed CX script or null if invalid.
 	 */
 	public static List<Node> asCX(String str) {
+		if (str == null) {
+			return null;
+		}
 		try {
 			return cxParser.parse(str);
 		} catch (ParserException e) {
@@ -217,10 +233,52 @@ public class Utils {
 	 * @return parsed JSON or null if invalid.
 	 */
 	public static Map<Object, Object> asJSON(String str) {
+		if (str == null) {
+			return null;
+		}
 		try {
 			return jsonParser.parseJSONString(str);
 		} catch (Exception e) {
 			return null;
 		}
 	}
+
+	public static X509TrustManager getX509TrustManager(KeyStore keystore)
+			throws NoSuchAlgorithmException, KeyStoreException {
+		TrustManagerFactory trustMgrFactory = TrustManagerFactory
+				.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+		trustMgrFactory.init(keystore);
+		TrustManager trustManagers[] = trustMgrFactory.getTrustManagers();
+		for (int i = 0; i < trustManagers.length; i++) {
+			if (trustManagers[i] instanceof X509TrustManager) {
+				return (X509TrustManager) trustManagers[i];
+			}
+		}
+		return null;
+	};
+
+	public static X509KeyManager getX509KeyManager(KeyStore keystore, String password)
+			throws NoSuchAlgorithmException, KeyStoreException, UnrecoverableKeyException {
+		KeyManagerFactory keyMgrFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+		keyMgrFactory.init(keystore, password.toCharArray());
+		KeyManager keyManagers[] = keyMgrFactory.getKeyManagers();
+		for (int i = 0; i < keyManagers.length; i++) {
+			if (keyManagers[i] instanceof X509KeyManager) {
+				return (X509KeyManager) keyManagers[i];
+			}
+		}
+		return null;
+	};
+
+	public static X509TrustManager trustAllCert = new X509TrustManager() {
+		public X509Certificate[] getAcceptedIssuers() {
+			return null;
+		}
+
+		public void checkClientTrusted(X509Certificate[] certs, String authType) {
+		}
+
+		public void checkServerTrusted(X509Certificate[] certs, String authType) {
+		}
+	};
 }

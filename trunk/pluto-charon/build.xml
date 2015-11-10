@@ -122,6 +122,7 @@
 		<delete file="${charon.build.jar}"/>
 
 		<jar destfile="${charon.build.jar}">
+			<fileset dir="${charon.src.dir}"/>
 			<fileset dir="${charon.build.dir}"/>
 
 			<zipfileset src="lib/cx-interpreter.jar" excludes="META-INF/**/*"/>
@@ -153,7 +154,9 @@
 		<delete file="${pluto.build.jar}"/>
 
 		<jar destfile="${pluto.build.jar}">
+			<fileset dir="${charon.src.dir}"/>
 			<fileset dir="${charon.build.dir}"/>
+			<fileset dir="${pluto.src.dir}"/>
 			<fileset dir="${pluto.build.dir}"/>
 			<zipfileset src="lib/jetty-all-8.1.10.v20130312.jar" excludes="META-INF/**/*"/>
 			<zipfileset src="lib/servlet-api-3.0.jar" excludes="META-INF/**/*"/>

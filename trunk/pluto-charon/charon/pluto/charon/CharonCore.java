@@ -22,7 +22,7 @@ public class CharonCore {
 		return charon.plutoSearch(prefix, 100);
 	}
 
-	public Object search(String prefix, int limit) throws Exception {
+	public Object searchLimit(String prefix, int limit) throws Exception {
 		return charon.plutoSearch(prefix, limit);
 	}
 
