@@ -10,13 +10,7 @@ import java.sql.Connection;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import json.JSONBuilder;
-import json.JSONParser;
-import pluto.charon.PlutoCharonConstants;
-import pluto.charon.PlutoCharonException;
-import pluto.charon.UTF8Modified;
-import pluto.core.Log;
-import pluto.handlers.PlutoImportHandler;
+
 import cx.Context;
 import cx.Parser;
 import cx.ast.Node;
@@ -25,7 +19,13 @@ import cx.handlers.DateHandler;
 import cx.handlers.MathHandler;
 import cx.handlers.ObjectHandler;
 import cx.handlers.StringHandler;
-import cx.handlers.SystemHandler;
+import json.JSONBuilder;
+import json.JSONParser;
+import pluto.charon.PlutoCharonConstants;
+import pluto.charon.PlutoCharonException;
+import pluto.charon.UTF8Modified;
+import pluto.core.Log;
+import pluto.handlers.PlutoImportHandler;
 
 public class ClientSession implements Runnable {
 	private final Socket socket;
@@ -39,7 +39,6 @@ public class ClientSession implements Runnable {
 	private final SessionManager sessionManager;
 	private final DBManager dbManager;
 	private final IAuthenticationManager authenticationManager;
-	private final Connection connection;
 
 	// id generator for the threads
 	private static int idSequence = 0;
@@ -53,7 +52,6 @@ public class ClientSession implements Runnable {
 		this.sessionManager = sessionManager;
 		this.authenticationManager = authenticationManager;
 		this.dbManager = dbManager;
-		this.connection = dbManager.beginTransaction();
 		outStream = new DataOutputStream(socket.getOutputStream());
 		inStream = new DataInputStream(socket.getInputStream());
 		cxParser = new Parser();
@@ -178,15 +176,15 @@ public class ClientSession implements Runnable {
 		} finally {
 			try {
 				socket.shutdownInput();
-			} catch (IOException e) {
+			} catch (Throwable e) {
 			}
 			try {
 				socket.shutdownOutput();
-			} catch (IOException e) {
+			} catch (Throwable e) {
 			}
 			try {
 				socket.close();
-			} catch (IOException e) {
+			} catch (Throwable e) {
 			}
 
 			sessionManager.detachSession(this);
@@ -279,26 +277,37 @@ public class ClientSession implements Runnable {
 	}
 
 	String get(String id) {
+		Connection connection = dbManager.getConnection();
+		String result;
 		try {
-			return dbManager.plutoGet(connection, id);
+			result = dbManager.plutoGet(connection, id);
 		} catch (Exception e) {
 			throw new IllegalStateException(e.getMessage(), e);
+		} finally {
+			dbManager.close(connection);
 		}
+		return result;
 	}
 
 	private void doGet(Map<Object, Object> actionMessage) throws IOException, PlutoCharonException {
 		String id = PlutoCharonConstants.getMessageString(actionMessage, PlutoCharonConstants.ID);
 
 		String value = get(id);
-		returnOk("pluto get was successful!", PlutoCharonConstants.LENGTH, value.length());
-		UTF8Modified.writeUTFModifiedNull(value, outStream);
+		int len = value.length();
+		returnOk("pluto get was successful!", PlutoCharonConstants.LENGTH, len);
+		if (len > 0) {
+			UTF8Modified.writeUTFModifiedNull(value, outStream);
+		}
 		outStream.flush();
 	}
 
 	void set(String key, String value) {
+		Connection connection = dbManager.beginTransaction();
 		try {
 			dbManager.plutoSet(connection, key, value);
+			dbManager.commitAndCloseTransaction(connection);
 		} catch (Exception e) {
+			dbManager.rollbackAndClose(connection);
 			throw new IllegalStateException(e.getMessage(), e);
 		}
 	}
@@ -364,10 +373,13 @@ public class ClientSession implements Runnable {
 	}
 
 	List<String> search(String prefix, int limit) {
+		Connection connection = dbManager.getConnection();
 		try {
 			return dbManager.plutoSearch(connection, prefix, limit);
 		} catch (Exception e) {
 			throw new IllegalStateException(e.getMessage(), e);
+		} finally {
+			dbManager.close(connection);
 		}
 	}
 

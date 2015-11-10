@@ -2,14 +2,27 @@ package pluto.charon;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.UTFDataFormatException;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
 
 import cx.Context;
 import cx.Parser;
@@ -28,7 +41,7 @@ public class Charon {
 	private final Socket socket;
 	private final DataOutputStream outStream;
 	private final DataInputStream inStream;
-	private final JSONBuilder jsonBuilder;
+	private final JSONBuilder jsonBuilder = new JSONBuilder();
 	private final Context cx;
 	private final CharonCore core;
 
@@ -52,9 +65,51 @@ public class Charon {
 		}
 		outStream = new DataOutputStream(socket.getOutputStream());
 		inStream = new DataInputStream(socket.getInputStream());
-		jsonBuilder = new JSONBuilder();
 
 		cx = new Context();
+		core = new CharonCore(this);
+		initContext(cx);
+	}
+
+	public static Socket createSSLCocket(String host, int port, int timeout, String sslKeystoreType,
+			String sslContextType, String sslCertificateFile, String sslCertificatePassword)
+					throws KeyStoreException, NoSuchAlgorithmException, CertificateException, IOException,
+					KeyManagementException, UnrecoverableKeyException {
+		KeyStore keyStore = KeyStore.getInstance(sslKeystoreType);
+		FileInputStream fileStream = new FileInputStream(sslCertificateFile);
+		keyStore.load(fileStream, sslCertificatePassword.toCharArray());
+
+		TrustManager[] trustManagers = new TrustManager[1];
+		trustManagers[0] = Utils.trustAllCert;// Utils.getX509TrustManager(keyStore);
+		SSLContext ctx = SSLContext.getInstance(sslContextType);
+
+		KeyManager[] keyManagers = new KeyManager[1];
+		keyManagers[0] = Utils.getX509KeyManager(keyStore, sslCertificatePassword);
+
+		ctx.init(keyManagers, trustManagers, null);
+		SSLSocketFactory SocketFactory = (SSLSocketFactory) ctx.getSocketFactory();
+
+		Socket socket = (SSLSocket) SocketFactory.createSocket(host, port);
+		if (timeout > 0) {
+			socket.setSoTimeout(timeout);
+		}
+		return socket;
+	}
+
+	/**
+	 * create client by custom socket implementation
+	 */
+	public Charon(Socket socket) throws UnknownHostException, IOException, PlutoCharonException {
+		this.socket = socket;
+		outStream = new DataOutputStream(socket.getOutputStream());
+		inStream = new DataInputStream(socket.getInputStream());
+
+		cx = new Context();
+		core = new CharonCore(this);
+		initContext(cx);
+	}
+
+	private void initContext(Context cx) {
 		cx.addHandler(new StringHandler());
 		cx.addHandler(new DateHandler());
 		cx.addHandler(new MathHandler());
@@ -62,7 +117,6 @@ public class Charon {
 		cx.addHandler(new SystemHandler("system"));
 
 		cx.addHandler(new CharonImportHandler(this));
-		core = new CharonCore(this);
 		cx.addHandler(new ObjectHandler(core, "charon"));
 	}
 
@@ -72,19 +126,19 @@ public class Charon {
 	public void close() {
 		try {
 			inStream.close();
-		} catch (IOException e) {
+		} catch (Throwable e) {
 		}
 		try {
 			outStream.close();
-		} catch (IOException e) {
+		} catch (Throwable e) {
 		}
 		try {
 			socket.shutdownOutput();
-		} catch (IOException e) {
+		} catch (Throwable e) {
 		}
 		try {
 			socket.shutdownInput();
-		} catch (IOException e) {
+		} catch (Throwable e) {
 		}
 	}
 
@@ -252,18 +306,21 @@ public class Charon {
 		Map<Object, Object> message = readMessage();
 		validateMessage(message);
 		int length = PlutoCharonConstants.getMessageInt(message, PlutoCharonConstants.LENGTH);
-		if (length <= 0) {
+		if (length < 0) {
 			throw new PlutoCharonException(
 					"server value for '" + PlutoCharonConstants.LENGTH + "' was expected to be positive value!");
 		}
+		if (length > 0) {
+			// read length content from the socket
+			String content = UTF8Modified.readUTFModifiedNull(inStream);
 
-		// read length content from the socket
-		String content = UTF8Modified.readUTFModifiedNull(inStream);
-
-		if (content.length() != length) {
-			throw new PlutoCharonException("server document received size differ from the declared length!");
+			if (content.length() != length) {
+				throw new PlutoCharonException("server document received size differ from the declared length!");
+			}
+			return content;
+		} else {
+			return null;
 		}
-		return content;
 	}
 
 	/**

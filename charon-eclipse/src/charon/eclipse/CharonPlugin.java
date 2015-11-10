@@ -62,8 +62,8 @@ public class CharonPlugin extends AbstractUIPlugin {
 
 		workbench.addWorkbenchListener(new IWorkbenchListener() {
 			public boolean preShutdown(IWorkbench workbench, boolean forced) {
-				final IWorkbenchPage activePage = workbench.getActiveWorkbenchWindow().getActivePage();				
-				for(CharonEditor editor: editors.keySet()){
+				final IWorkbenchPage activePage = workbench.getActiveWorkbenchWindow().getActivePage();
+				for (CharonEditor editor : editors.keySet()) {
 					activePage.closeEditor(editor, false);
 				}
 				return true;
@@ -166,8 +166,18 @@ public class CharonPlugin extends AbstractUIPlugin {
 
 					// get transaction code
 					String transactionCode = client.plutoGet(transaction);
-					List<Node> tranzactionAST = Utils.asCX(transactionCode);
-					client.charonExecute(tranzactionAST);
+					if (transactionCode != null) {
+						List<Node> tranzactionAST = Utils.asCX(transactionCode);
+						if (tranzactionAST != null) {
+							client.charonExecute(tranzactionAST);
+						} else {
+							MessageDialog.openInformation(null, "Transaction not executable!",
+									"Cannot execute transaction: " + transaction);
+						}
+					} else {
+						MessageDialog.openInformation(null, "Transaction not found!",
+								"Cannot find transaction: " + transaction);
+					}
 
 				} catch (Exception e) {
 					CharonPlugin.reportException(e);

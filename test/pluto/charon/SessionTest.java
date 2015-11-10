@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
+import java.net.Socket;
 import java.sql.Connection;
 import java.util.List;
 import java.util.Map;
@@ -11,6 +12,7 @@ import java.util.Properties;
 
 import org.sqlite.JDBC;
 
+import cx.Parser;
 import cx.ast.Node;
 import junit.framework.TestCase;
 import pluto.core.Pluto;
@@ -21,39 +23,90 @@ import utils.LocalAuthentication;
 
 public class SessionTest extends TestCase {
 
-	public void testClientSession() throws Exception {
+	public static class LocalDB extends SQLHelperManager {
+		private final JDBC driver = new JDBC();
+		private final Properties driverParameters = new Properties();
+		private final String connectionString;
 
+		LocalDB(Properties properties) {
+			connectionString = properties.getProperty(DBManager.DB_JDBC);
+		}
+
+		public Connection createConnection() throws Exception {
+			Connection conn = null;
+			conn = driver.connect(connectionString, driverParameters);
+			return conn;
+		}
+	}
+
+	static DBManager dbManager = null;
+
+	@Override
+	protected void setUp() throws Exception {
+		super.setUp();
+
+		if (dbManager == null) {
+			// initialize DB if required
+			final Properties properties = new Properties();
+			properties.load(new FileInputStream(new File(Pluto.PROPERTIES_FILE)));
+
+			SQLHelperManager db = new LocalDB(properties);
+			Connection conn = db.getConnection();
+			db.ddlQuery(conn, "CREATE TABLE IF NOT EXISTS PLUTO_CORE (pluto_key, pluto_line, pluto_value)");
+			db.close(conn);
+
+			dbManager = new DBManager(properties);
+		}
+	}
+
+	public void testClientSessionSSL() throws Exception {
+		System.gc();
 		final Properties properties = new Properties();
 		properties.load(new FileInputStream(new File(Pluto.PROPERTIES_FILE)));
+		properties.setProperty(SessionManager.SERVER_CONTEXT_TYPE, "SSL");
+
 		// bring up the server session with no authentication
 		final int port = 12121;
 		properties.put(SessionManager.SERVER_PORT, String.valueOf(port));
 
-		{// initialize DB if required
-			SQLHelperManager db = new SQLHelperManager() {
-				private final JDBC driver = new JDBC();
-				private final Properties driverParameters = new Properties();
-				private final String connectionString;
+		SessionManager sessionManager = new SessionManager(properties, new LocalAuthentication(), dbManager);
+		sessionManager.start();
 
-				{
-					connectionString = properties.getProperty(DBManager.DB_JDBC);
-				}
+		Socket sslClientSocket = Charon.createSSLCocket("localhost", port, 0, "JKS", "SSL", "charon.jks",
+				"pluto-charon");
 
-				public Connection createConnection() throws Exception {
-					Connection conn = null;
-					conn = driver.connect(connectionString, driverParameters);
-					return conn;
-				}
-			};
-			Connection conn = db.getConnection();
-			db.ddlQuery(conn, "CREATE TABLE IF NOT EXISTS PLUTO_CORE (pluto_key, pluto_line, pluto_value)");
-			db.close(conn);
-		}
-		DBManager dbManager = new DBManager(properties);
+		Charon client = new Charon(sslClientSocket);
+
+		comunicationScenario(client);
+
+		client.logout();
+		client.close();
+		sessionManager.stop();
+	}
+
+	public void testClientSession() throws Exception {
+		System.gc();
+		final Properties properties = new Properties();
+		properties.load(new FileInputStream(new File(Pluto.PROPERTIES_FILE)));
+		properties.remove(SessionManager.SERVER_CONTEXT_TYPE);
+
+		// bring up the server session with no authentication
+		final int port = 12121;
+		properties.put(SessionManager.SERVER_PORT, String.valueOf(port));
+
 		SessionManager sessionManager = new SessionManager(properties, new LocalAuthentication(), dbManager);
 		sessionManager.start();
 
 		Charon client = new Charon("localhost", port, 0);
+
+		comunicationScenario(client);
+
+		client.logout();
+		client.close();
+		sessionManager.stop();
+	}
+
+	void comunicationScenario(Charon client) throws Exception {
 		{ // connection
 			client.ping();
 			client.login("test", "test");
@@ -137,16 +190,22 @@ public class SessionTest extends TestCase {
 			String programName = "demo";
 			String program = fileToString("./test/demo.cx");
 			client.plutoSet(programName, program);
-			String str = String.valueOf(client.plutoGet(programName)); 
-			assertEquals(program, str); 
+			String str = String.valueOf(client.plutoGet(programName));
+			assertEquals(program, str);
 			String programCode = client.plutoGet(programName);
 			List<Node> programAST = Utils.asCX(programCode);
 			client.charonExecute(programAST);
 		}
-
-		client.logout();
-		client.close();
-		sessionManager.stop();
+		{// put a default program to server
+			String programName = "editor";
+			String program = fileToString("./test/editor.cx");
+			client.plutoSet(programName, program);
+			String str = String.valueOf(client.plutoGet(programName));
+			assertEquals(program, str);
+			String programCode = client.plutoGet(programName);
+			Parser cxParser = new Parser();
+			cxParser.parse(programCode);
+		}
 	}
 
 	String fileToString(String fileName) throws Exception {

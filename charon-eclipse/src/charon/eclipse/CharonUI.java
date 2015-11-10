@@ -116,6 +116,13 @@ public class CharonUI {
 				return ((Combo) control).getText();
 			} else if (control instanceof Section) {
 				return ((Section) control).getText();
+			} else if (control instanceof List) {
+				String[] selection = ((List) control).getSelection();
+				if (selection.length > 0) {
+					return selection[0];
+				} else {
+					return null;
+				}
 			}
 		} else if (control instanceof CharonAction) {
 			return ((CharonAction) control).getText();
@@ -150,6 +157,35 @@ public class CharonUI {
 			((CharonAction) control).setText(text);
 		} else if (control instanceof CharonEditorInput) {
 			editor.setName(text);
+		}
+	}
+
+	public void clear(String id) {
+		if (editor == null) {
+			return;
+		}
+		Object control = editor.idToComponent.get(id);
+		if (control instanceof Control) {
+			if (control instanceof Button) {
+				((Button) control).setText("");
+			} else if (control instanceof Text) {
+				((Text) control).setText("");
+			} else if (control instanceof Text) {
+				((Text) control).setText("");
+			} else if (control instanceof Label) {
+				((Label) control).setText("");
+			} else if (control instanceof Label) {
+				((Label) control).setText("");
+			} else if (control instanceof Combo) {
+				((Combo) control).setItems(new String[0]);
+				((Combo) control).clearSelection();
+			} else if (control instanceof List) {
+				((List) control).setItems(new String[0]);
+			}
+		} else if (control instanceof CharonAction) {
+			((CharonAction) control).setText("");
+		} else if (control instanceof CharonEditorInput) {
+			editor.setName("");
 		}
 	}
 

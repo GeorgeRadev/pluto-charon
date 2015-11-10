@@ -1,0 +1,56 @@
+var interface = {
+	columns: 2,
+	align:'FILL', valign:'FILL',
+	components: [
+		{
+			type:'splitter', 
+			horizontal:33, 
+			align:'FILL', valign:'FILL',
+			components:[
+				{
+					type:'section',
+					text:'Browse Pluto', 
+					columns:3, 
+					align:'FILL',
+					components:[
+						{type:'label',  text:'search prefix:', valign:'CENTER' }, 
+						{type:'text',   id:'searchFilter', align:'FILL', valign:'CENTER' }, 
+						{type:'button', id:'searchButton', text:'Search', icon:'icons/search.png', valign:'CENTER' },
+						{type:'list',   id:'resultList', colspan:3, align:'FILL', valign:'FILL' }
+					]
+				}, 
+				{
+					type:'section',
+					id:'editorSection',
+					text:'Entry Value',
+					columns:1, 
+					align:'FILL', valign:'FILL',
+					components:[
+						{type:'text',   id:'valueText', multi: true, hscroll: true, vscroll:true, align:'FILL', valign:'FILL' },						
+						{type:'button', id:'saveButton', text:'Save', align:'RIGHT' },
+					]
+				}
+			]
+		}
+	]
+};
+
+var handlers = {
+	onClick:function(componentId) {
+		if(componentId == 'searchButton') {
+			var prefix = charonUI.getText('searchFilter');
+			var values = charon.searchLimit(prefix, 300);
+			charonUI.clear('resultList');
+			for(value: values){
+				charonUI.addItem('resultList', value);
+			}
+		}else if(componentId == 'resultList'){
+			var key = charonUI.getText(componentId);
+			charonUI.setText('editorSection', key);
+			var value = charon.get(key);
+			charonUI.setText('valueText', value);
+		}
+	}
+};
+
+charonUI.createUI('Pluto Browser', interface, handlers);

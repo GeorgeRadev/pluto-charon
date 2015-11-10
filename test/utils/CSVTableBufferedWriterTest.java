@@ -2,8 +2,9 @@ package utils;
 
 import java.io.IOException;
 import java.io.StringWriter;
-import pluto.utils.CSVTableBufferedWriter;
+
 import junit.framework.TestCase;
+import pluto.utils.CSVTableBufferedWriter;
 
 public class CSVTableBufferedWriterTest extends TestCase {
 
