@@ -150,6 +150,10 @@ public class SessionTest extends TestCase {
 			client.plutoSet("id2", "value2");
 			List<String> search = client.plutoSearch("id", 2);
 			assertEquals(2, search.size());
+			for(String line: search){
+				assertTrue(line.startsWith("id"));
+			}
+			
 			search = client.plutoSearch("", -1);
 			assertTrue(search.size() > 2);
 		}

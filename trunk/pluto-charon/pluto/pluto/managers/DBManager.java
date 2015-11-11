@@ -203,7 +203,7 @@ public class DBManager extends SQLHelperManager {
 		}
 		PreparedStatement pstmt = null;
 		try {
-			String sql = "SELECT distinct pluto_key from " + PLUTO_TABLE + " where pluto_key like ?";
+			String sql = "SELECT distinct pluto_key from " + PLUTO_TABLE + " where pluto_key like ? order by pluto_key";
 			pstmt = connection.prepareStatement(sql);
 			pstmt.setString(1, prefix + "%");
 

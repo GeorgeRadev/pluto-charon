@@ -23,11 +23,13 @@ var interface = {
 					type:'section',
 					id:'editorSection',
 					text:'Entry Value',
-					columns:1, 
+					columns:3, 
 					align:'FILL', valign:'FILL',
 					components:[
-						{type:'text',   id:'valueText', multi: true, hscroll: true, vscroll:true, align:'FILL', valign:'FILL' },						
-						{type:'button', id:'saveButton', text:'Save', align:'RIGHT' },
+						{type:'label',  text:'name:', valign:'CENTER' }, 
+						{type:'text',   id:'valueID', align:'FILL', valign:'CENTER' }, 
+						{type:'button', id:'saveButton', text:'Save', valign:'CENTER' },
+						{type:'text',   id:'valueText', multi: true, hscroll: true, vscroll:true, colspan:3, align:'FILL', valign:'FILL' }
 					]
 				}
 			]
@@ -44,13 +46,21 @@ var handlers = {
 			for(value: values){
 				charonUI.addItem('resultList', value);
 			}
+			
 		}else if(componentId == 'resultList'){
 			var key = charonUI.getText(componentId);
 			charonUI.setText('editorSection', key);
+			charonUI.setText('valueID', key);
 			var value = charon.get(key);
 			charonUI.setText('valueText', value);
+			
+		}else if(componentId == 'saveButton'){
+			var key = charonUI.getText('valueID');
+			var value = charonUI.getText('valueText'); 
+			charon.put(key,value);
+			charonUI.messageBox(key,'Key ['+key+'] was updated!');
 		}
 	}
 };
 
-charonUI.createUI('Pluto Browser', interface, handlers);
+charonUI.createUI('Pluto-Charon Editor', interface, handlers);

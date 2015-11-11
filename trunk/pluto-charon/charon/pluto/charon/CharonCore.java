@@ -14,6 +14,10 @@ public class CharonCore {
 		charon.plutoSet(key, value);
 	}
 
+	public void put(String key, String value) throws Exception {
+		charon.plutoSet(key, value);
+	}
+
 	public Object get(String key) throws Exception {
 		return charon.plutoGet(key);
 	}
