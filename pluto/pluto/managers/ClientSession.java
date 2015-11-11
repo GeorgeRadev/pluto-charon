@@ -388,7 +388,7 @@ public class ClientSession implements Runnable {
 		{
 			Object _prefix = actionMessage.get(PlutoCharonConstants.PREFIX);
 			if (_prefix != null) {
-				prefix = prefix.toString();
+				prefix = _prefix.toString();
 			}
 		}
 		int limit = PlutoCharonConstants.getMessageInt(actionMessage, PlutoCharonConstants.LIMIT);
