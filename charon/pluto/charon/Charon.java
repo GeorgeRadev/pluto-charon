@@ -71,7 +71,7 @@ public class Charon {
 		initContext(cx);
 	}
 
-	public static Socket createSSLCocket(String host, int port, int timeout, String sslKeystoreType,
+	public static Socket createSSLSocket(String host, int port, int timeout, String sslKeystoreType,
 			String sslContextType, String sslCertificateFile, String sslCertificatePassword)
 					throws KeyStoreException, NoSuchAlgorithmException, CertificateException, IOException,
 					KeyManagementException, UnrecoverableKeyException {
