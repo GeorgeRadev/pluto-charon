@@ -1,5 +1,7 @@
 package charon.eclipse;
 
+import java.net.ConnectException;
+import java.net.Socket;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -27,10 +29,17 @@ import pluto.charon.Utils;
 public class CharonPlugin extends AbstractUIPlugin {
 
 	// The plug-in ID
-	public static final String PLUGIN_ID = "charon-eclipse"; //$NON-NLS-1$
+	public static final String PLUGIN_ID = "charon-eclipse";
+
 	public static final String PLUTO_HOST = "plutoHost";
 	public static final String PLUTO_PORT = "plutoPort";
 	public static final String PLUTO_TIMEOUT = "plutoTimeout";
+
+	public static final String PLUTO_SSL_CONTEXT = "plutoSSLContext";
+	public static final String PLUTO_KEYSTORE_TYPE = "plutoKeystoreType";
+	public static final String PLUTO_CERTIFICATION_FILE = "plutoCertificationFile";
+	public static final String PLUTO_CERTIFICATION_PASSWORD = "plutoCertificationPassword";
+
 	public static final String PLUTO_USER = "plutoUser";
 	public static final String PLUTO_PASSWORD = "plutoPassword";
 
@@ -149,6 +158,14 @@ public class CharonPlugin extends AbstractUIPlugin {
 					MessageDialog.openError(null, "Pluto Charon Settings",
 							"Define timeout in : Windows -> Preferences... -> Pluto-Charon Settings");
 				}
+
+				// SSL settings
+				String plutoSSLContext = store.getString(PLUTO_SSL_CONTEXT);
+				String plutoKeystoreType = store.getString(PLUTO_KEYSTORE_TYPE);
+				String plutoCertificationFile = store.getString(PLUTO_CERTIFICATION_FILE);
+				String plutoCertificationPassword = store.getString(PLUTO_CERTIFICATION_PASSWORD);
+
+				// authentication settings
 				String user = store.getString(PLUTO_USER);
 				if (user == null || user.length() <= 0) {
 					MessageDialog.openError(null, "Pluto Charon Settings",
@@ -159,8 +176,25 @@ public class CharonPlugin extends AbstractUIPlugin {
 					MessageDialog.openError(null, "Pluto Charon Settings",
 							"Define user in : Windows -> Preferences... -> Pluto-Charon Settings");
 				}
+
 				try {
-					Charon client = new Charon(host, port, timeout);
+					final Charon client;
+					
+					if (plutoSSLContext != null && plutoKeystoreType != null && plutoCertificationFile != null
+							&& plutoCertificationPassword != null && plutoSSLContext.length() > 0
+							&& plutoKeystoreType.length() > 0 && plutoCertificationFile.length() > 0
+							&& plutoCertificationPassword.length() > 0) {
+						//build SSL connection
+						Socket sslClientSocket = Charon.createSSLSocket("localhost", port, 0, plutoKeystoreType,
+								plutoSSLContext, plutoCertificationFile, plutoCertificationPassword);
+						if(timeout>0){
+							sslClientSocket.setSoTimeout(timeout);
+						}
+						client = new Charon(sslClientSocket);
+					} else {
+						// use standard socket communication
+						client = new Charon(host, port, timeout);
+					}
 					client.login(user, pass);
 					client.addContextHandler("charonUI", new CharonUI(client));
 
@@ -179,7 +213,9 @@ public class CharonPlugin extends AbstractUIPlugin {
 								"Cannot find transaction: " + transaction);
 					}
 
-				} catch (Exception e) {
+				} catch(ConnectException e){
+					MessageDialog.openError(null, "Connection error", e.getMessage());
+				}catch (Exception e) {
 					CharonPlugin.reportException(e);
 				}
 			}

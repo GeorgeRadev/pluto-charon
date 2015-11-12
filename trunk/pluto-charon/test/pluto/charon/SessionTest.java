@@ -72,7 +72,7 @@ public class SessionTest extends TestCase {
 		SessionManager sessionManager = new SessionManager(properties, new LocalAuthentication(), dbManager);
 		sessionManager.start();
 
-		Socket sslClientSocket = Charon.createSSLCocket("localhost", port, 0, "JKS", "SSL", "charon.jks",
+		Socket sslClientSocket = Charon.createSSLSocket("localhost", port, 0, "JKS", "SSL", "charon.jks",
 				"pluto-charon");
 
 		Charon client = new Charon(sslClientSocket);
