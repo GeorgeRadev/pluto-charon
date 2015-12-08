@@ -1,17 +1,26 @@
 package pluto.core;
 
-
 /**
- * bootstrap for apache common service:<br/>
- * plutoService.exe //IS//pluto --Install="C:\pluto\pluto.exe" --Jvm=auto
- * --Startup=auto --StartMode=jvm --Classpath="C:\pluto\pluto.jar"
- * --StartClass=pluto.core.PlutoService
+ * bootstrap for Apache common service:<br/>
+ * <br/>
+ * register: <br/>
+ * pluto.exe //IS//plutoService --Install="C:\pluto\pluto.exe" --Description=
+ * "Pluto-Charon Service" --Jvm=auto --Startup=auto --StartPath="C:\pluto"
+ * --JvmMs=128 --JvmMx=128 --Classpath="C:\pluto\pluto.jar"
+ * --StartClass=pluto.core.PlutoService --StartMode=jvm --StartParams=start
+ * --StopMode=jvm --StopClass=pluto.core.PlutoService --StopParams=stop
+ * --StopTimeout=20 --LogPath="C:\pluto\log" --LogPrefix="plutoservice"
+ * --StdOutput="auto" --StdError="auto" <br/>
+ * test: <br/>
+ * pluto.exe //TS//plutoService <br/>
+ * remove: <br/>
+ * prunsrv.exe //DS//plutoService
  */
 public class PlutoService implements Runnable {
 	private static Thread mainThread;
 
 	public static void main(String[] args) {
-		if ("stop".equals(args[0])) {
+		if (args.length > 0 && "stop".equals(args[0])) {
 			if (mainThread != null) {
 				mainThread.interrupt();
 				mainThread = null;
